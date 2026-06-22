@@ -106,22 +106,25 @@ TEST(TrackerTest, TrackingOptionsTest)
   ASSERT_EQ(2u, tracker.late());
   ASSERT_EQ(0u, tracker.too_late());
 
-  // store mean as it should not be updated with too late messages
-  double mean = tracker.stat().mean();
+  // mean over the on-time + late samples so far: (0 + 3000 + 6000) / 3
+  ASSERT_DOUBLE_EQ(3000.0, tracker.stat().mean());
 
-  // this message is too late because it exceeds too_late_percentage
+  // this message is too late because it exceeds too_late_percentage. Latency is
+  // still recorded for too-late messages, so the mean is updated:
+  // (0 + 3000 + 6000 + 11000) / 4
   rclcpp::Time t_now4(0, 11e6, RCL_ROS_TIME);
   tracker.scan(header, t_now4, nullptr);
 
   ASSERT_EQ(2u, tracker.late());
   ASSERT_EQ(1u, tracker.too_late());
-  ASSERT_DOUBLE_EQ(mean, tracker.stat().mean());
+  ASSERT_DOUBLE_EQ(5000.0, tracker.stat().mean());
 
-  // this message is too late because it exceeds too_late_absolute_us
+  // this message is too late because it exceeds too_late_absolute_us. Again the
+  // sample is included: (0 + 3000 + 6000 + 11000 + 111000) / 5
   rclcpp::Time t_now5(0, 111e6, RCL_ROS_TIME);
   tracker.scan(header, t_now5, nullptr);
 
   ASSERT_EQ(2u, tracker.late());
   ASSERT_EQ(2u, tracker.too_late());
-  ASSERT_DOUBLE_EQ(mean, tracker.stat().mean());
+  ASSERT_DOUBLE_EQ(26200.0, tracker.stat().mean());
 }
