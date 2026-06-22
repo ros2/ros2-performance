@@ -135,8 +135,18 @@ void ResourceUsageLogger::_get()
     std::chrono::duration_cast<std::chrono::milliseconds>(t2_real - m_t1_real).count();
   m_resources.cpu_usage = time_elapsed_user_ms / (time_elapsed_real_ms * n_threads) * 100;
 
-  // Get mallinfo
-#if (defined(__UCLIBC__) || defined(__GLIBC__))
+  // Get mallinfo. Prefer mallinfo2 (glibc >= 2.33): its size_t fields avoid the
+  // int overflow in the legacy mallinfo struct once the arena exceeds 2 GB.
+#if defined(__GLIBC__)
+#  if __GLIBC_PREREQ(2, 33)
+  auto mem_info = mallinfo2();
+#  else
+  auto mem_info = mallinfo();
+#  endif
+  m_resources.mem_arena_KB = mem_info.arena >> 10;
+  m_resources.mem_in_use_KB = mem_info.uordblks >> 10;
+  m_resources.mem_mmap_KB = mem_info.hblkhd >> 10;
+#elif defined(__UCLIBC__)
   auto mem_info = mallinfo();
   m_resources.mem_arena_KB = mem_info.arena >> 10;
   m_resources.mem_in_use_KB = mem_info.uordblks >> 10;
