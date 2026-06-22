@@ -53,7 +53,7 @@ void ResourceUsageLogger::start(std::chrono::milliseconds period)
 
   // create a detached thread that monitors resource usage periodically
   m_logger_thread = std::thread(
-    [ =, this ]() {
+    [ =, this]() {
       int64_t i = 1;
       while (m_is_logging) {
         // Updating m_t1_user and m_t1_real here will have the effect of calculating

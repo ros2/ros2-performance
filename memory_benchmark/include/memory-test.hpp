@@ -25,9 +25,9 @@ inline void print_rss(const std::string & description, size_t number)
 
   // Print values in CSV format
   std::cout << description << ","
-       << number << ","
-       << current_rss << ","
-       << delta_rss << std::endl;
+            << number << ","
+            << current_rss << ","
+            << delta_rss << std::endl;
 
   last_rss = usage.ru_maxrss;
 }

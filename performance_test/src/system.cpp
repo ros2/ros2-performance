@@ -259,8 +259,10 @@ void System::log_latency_all_stats(
       auto action_server_trackers = n->action_server_trackers();
       clients.insert(clients.end(), client_trackers.begin(), client_trackers.end());
       services.insert(services.end(), service_trackers.begin(), service_trackers.end());
-      action_clients.insert(action_clients.end(), action_client_trackers.begin(), action_client_trackers.end());
-      action_servers.insert(action_servers.end(), action_server_trackers.begin(), action_server_trackers.end());
+      action_clients.insert(action_clients.end(), action_client_trackers.begin(),
+          action_client_trackers.end());
+      action_servers.insert(action_servers.end(), action_server_trackers.begin(),
+          action_server_trackers.end());
     }
 
     performance_metrics::log_trackers_latency_all_stats(
@@ -316,9 +318,11 @@ void System::log_latency_total_stats(
       auto client_trackers = n->client_trackers();
       all_trackers.insert(all_trackers.end(), client_trackers.begin(), client_trackers.end());
       auto action_client_trackers = n->action_client_trackers();
-      all_trackers.insert(all_trackers.end(), action_client_trackers.begin(), action_client_trackers.end());
+      all_trackers.insert(all_trackers.end(), action_client_trackers.begin(),
+          action_client_trackers.end());
       auto action_server_trackers = n->action_server_trackers();
-      all_trackers.insert(all_trackers.end(), action_server_trackers.begin(), action_server_trackers.end());
+      all_trackers.insert(all_trackers.end(), action_server_trackers.begin(),
+          action_server_trackers.end());
     }
   }
   performance_metrics::log_trackers_latency_total_stats(stream, all_trackers, m_csv_out);
@@ -328,14 +332,14 @@ void System::set_latency_callback(
   performance_metrics::ResourceUsageLogger & ru_logger)
 {
   // Get all subscription trackers for later use
-  for (const auto& node : m_nodes) {
+  for (const auto & node : m_nodes) {
     auto sub_trackers = node->sub_trackers_ptr();
     m_all_subscription_trackers.insert(
       m_all_subscription_trackers.end(), sub_trackers.begin(), sub_trackers.end());
   }
 
   ru_logger.set_get_latency_callback(
-    [this]() { return performance_metrics::get_trackers_avg_latency(m_all_subscription_trackers); });
+    [this]() {return performance_metrics::get_trackers_avg_latency(m_all_subscription_trackers);});
 }
 
 void System::print_aggregate_stats(
@@ -375,9 +379,10 @@ void System::print_aggregate_stats(
       } else {
         std::cout << "[SystemLatencyLogger]: Error. Could not open file " << filename << std::endl;
       }
-    } catch (const std::out_of_range& e) {
-      std::cerr << "Out of range error: " << e.what() << " while processing json: " << json << std::endl;
-    } catch (const std::exception& e) {
+    } catch (const std::out_of_range & e) {
+      std::cerr << "Out of range error: " << e.what() << " while processing json: " << json <<
+        std::endl;
+    } catch (const std::exception & e) {
       std::cerr << "Exception: " << e.what() << " while processing json: " << json << std::endl;
     }
   }

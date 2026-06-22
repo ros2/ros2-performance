@@ -92,11 +92,11 @@ PerformanceNodeBase::sub_trackers()
   return trackers;
 }
 
-std::vector<const performance_metrics::Tracker*>
+std::vector<const performance_metrics::Tracker *>
 PerformanceNodeBase::sub_trackers_ptr()
 {
-  std::vector<const performance_metrics::Tracker*> trackers;
-  for (const auto& sub : m_subs) {
+  std::vector<const performance_metrics::Tracker *> trackers;
+  for (const auto & sub : m_subs) {
     trackers.push_back(&(sub.second.second));
   }
 
@@ -259,9 +259,9 @@ void PerformanceNodeBase::store_action_server(
     tracking_options);
 
   m_action_servers.insert(
-  {
-    action_name,
-    std::make_tuple(server, tracker, 0)
+    {
+      action_name,
+      std::make_tuple(server, tracker, 0)
   });
 
   RCLCPP_INFO(this->get_node_logger(), "Action Server to %s created", action_name.c_str());

@@ -13,10 +13,10 @@
 BaseNode::BaseNode(
   const rclcpp::NodeOptions & options)
 : performance_test::PerformanceNode<rclcpp::Node>(
-  "base_node",
-  "",
-  options)
-{ }
+    "base_node",
+    "",
+    options)
+{}
 
 BaseNode::~BaseNode()
 {

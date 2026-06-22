@@ -52,7 +52,7 @@ struct CompositionOptions
       } else if (key == "name") {
         name = str_value;
       } else {
-        std::cout<<"INVALID KEY  "<< key << " WITH VALUE " << str_value << std::endl;
+        std::cout << "INVALID KEY  " << key << " WITH VALUE " << str_value << std::endl;
         assert(0);
       }
     }

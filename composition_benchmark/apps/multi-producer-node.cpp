@@ -19,43 +19,43 @@
 class MultiProducerNode : public performance_test::PerformanceNode<rclcpp::Node>
 {
 public:
-    MultiProducerNode(const rclcpp::NodeOptions & options = rclcpp::NodeOptions())
-    : performance_test::PerformanceNode<rclcpp::Node>(
-        "MultiProducerNode",
-        "",
-        options)
-    {
-        int topics_number = this->declare_parameter<int>("topics_number", 1);
-        std::vector<std::function<void ()>> publish_functions;
-        for (int i = 0; i < topics_number; i++) {
+  MultiProducerNode(const rclcpp::NodeOptions & options = rclcpp::NodeOptions())
+  : performance_test::PerformanceNode<rclcpp::Node>(
+      "MultiProducerNode",
+      "",
+      options)
+  {
+    int topics_number = this->declare_parameter<int>("topics_number", 1);
+    std::vector<std::function<void ()>> publish_functions;
+    for (int i = 0; i < topics_number; i++) {
 
-            using Msg = irobot_interfaces_plugin::msg::Stamped10b;
+      using Msg = irobot_interfaces_plugin::msg::Stamped10b;
 
-            std::string topic_name = "topic_" + std::to_string(i);
-            this->add_publisher<Msg>(topic_name, rclcpp::SensorDataQoS());
+      std::string topic_name = "topic_" + std::to_string(i);
+      this->add_publisher<Msg>(topic_name, rclcpp::SensorDataQoS());
 
-            auto publish_func = std::bind(
+      auto publish_func = std::bind(
                 &MultiProducerNode::publish_msg<Msg>,
                 this,
                 topic_name,
                 performance_test::msg_pass_by_t::PASS_BY_UNIQUE_PTR,
                 0,
                 std::chrono::milliseconds(10));
-            publish_functions.push_back(publish_func);
-        }
+      publish_functions.push_back(publish_func);
+    }
 
-        this->add_timer(std::chrono::milliseconds(10), [this, publish_functions](){
-            for (auto & func : publish_functions) {
-                func();
-            }
+    this->add_timer(std::chrono::milliseconds(10), [this, publish_functions](){
+        for (auto & func : publish_functions) {
+          func();
+        }
         });
 
-        this->add_periodic_publisher<irobot_interfaces_plugin::msg::Stamped100kb>(
+    this->add_periodic_publisher<irobot_interfaces_plugin::msg::Stamped100kb>(
             "slow_topic",
             std::chrono::milliseconds(111),
             performance_test::msg_pass_by_t::PASS_BY_UNIQUE_PTR,
             rclcpp::SensorDataQoS());
-    }
+  }
 };
 
 int main(int argc, char ** argv)

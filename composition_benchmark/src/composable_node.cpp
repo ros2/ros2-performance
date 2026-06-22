@@ -11,10 +11,10 @@
 
 ComposableNode::ComposableNode(const rclcpp::NodeOptions & options)
 : performance_test::PerformanceNode<rclcpp::Node>(
-  "composable_node",
-  "",
-  options)
-{ }
+    "composable_node",
+    "",
+    options)
+{}
 
 #include "rclcpp_components/register_node_macro.hpp"
 

@@ -12,9 +12,9 @@
 
 ComposablePublisher::ComposablePublisher(const rclcpp::NodeOptions & options)
 : performance_test::PerformanceNode<rclcpp::Node>(
-  "composable_publisher",
-  "",
-  options)
+    "composable_publisher",
+    "",
+    options)
 {
   auto topic_name = this->declare_parameter<std::string>("topic", "my_topic");
   auto pub_frequency = this->declare_parameter<int>("frequency", 10);

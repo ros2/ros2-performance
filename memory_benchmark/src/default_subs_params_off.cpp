@@ -63,7 +63,7 @@ int main(int argc, char * argv[])
   // (we need the node_1 for single entities)
   // {NODE(1) CREATE_50(CLI)}
   // {NODE(1) CREATE_50(SRV)}
-  {NODE(1) CREATE_50_TYPED(SUB,M1)}
+  {NODE(1) CREATE_50_TYPED(SUB, M1)}
   // {NODE(1) CREATE_50_TYPED(PUB,M1)}
   // {NODE(1) CREATE_50_DIFF_MSG(SUB)}
   // {NODE(1) CREATE_50_DIFF_MSG(PUB)}
