@@ -509,7 +509,6 @@ void PerformanceNodeBase::send_action_goal_request(const std::string & name)
           name.c_str());
         return;
       }
-    // RCLCPP_INFO(this->get_node_logger(), "Goal accepted by action server for action %s", name.c_str());
     };
 
   goal_options.result_callback =

@@ -28,12 +28,13 @@
 
 #pragma once
 
-#include <string>
-#include <iostream>
-#include <iomanip>
-
 #include <sys/resource.h>
 #include <sys/types.h>
+
+#include <cstdint>
+#include <iomanip>
+#include <iostream>
+#include <string>
 
 inline void print_header()
 {
@@ -44,12 +45,12 @@ inline void print_header()
 inline void print_rss(const std::string & description, size_t number)
 {
   struct rusage usage;
-  static long last_rss = 0;
+  static int64_t last_rss = 0;
 
   getrusage(RUSAGE_SELF, &usage);
 
-  long current_rss = usage.ru_maxrss;
-  long delta_rss = current_rss - last_rss;
+  int64_t current_rss = usage.ru_maxrss;
+  int64_t delta_rss = current_rss - last_rss;
 
   // Print values in CSV format
   std::cout << description << ","

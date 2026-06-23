@@ -26,6 +26,8 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+#pragma once
+
 // Nodes with single entities
 #define NODE(NUM) \
   auto node_ ## NUM = rclcpp::Node::make_shared("node_" #NUM, node_options); \
@@ -34,15 +36,15 @@
 
 #define NODE_P(NUM, TYPE) \
   auto node_ ## NUM = rclcpp::Node::make_shared("node_p_"#TYPE "_"#NUM, node_options); \
-  auto publisher_ ## NUM = node_ ## NUM->create_publisher<memory_benchmark::msg::TYPE>("topic_"#NUM, \
-    1); \
+  auto publisher_ ## NUM = \
+    node_ ## NUM->create_publisher<memory_benchmark::msg::TYPE>("topic_"#NUM, 1); \
   executor->add_node(node_ ## NUM); \
   print_rss("node_p_"#TYPE, NUM);
 
 #define NODE_PS_DIFF_TOPIC(NUM, TYPE) \
   auto node_ ## NUM = rclcpp::Node::make_shared("node_ps_"#TYPE "_"#NUM, node_options); \
-  auto publisher_ ## NUM = node_ ## NUM->create_publisher<memory_benchmark::msg::TYPE>("topic_"#NUM, \
-    1); \
+  auto publisher_ ## NUM = \
+    node_ ## NUM->create_publisher<memory_benchmark::msg::TYPE>("topic_"#NUM, 1); \
   auto subscription_ ## NUM = node_ ## NUM->create_subscription<memory_benchmark::msg::TYPE>( \
     "topic_"#NUM, 10, [](const memory_benchmark::msg::TYPE & msg) {(void)msg;}); \
   executor->add_node(node_ ## NUM); \
@@ -50,8 +52,8 @@
 
 #define NODE_PS_DIFF_TOPIC_BIG_HISTORY_SIZE(NUM, TYPE) \
   auto node_ ## NUM = rclcpp::Node::make_shared("node_ps_"#TYPE "_"#NUM, node_options); \
-  auto publisher_ ## NUM = node_ ## NUM->create_publisher<memory_benchmark::msg::TYPE>("topic_"#NUM, \
-    100); \
+  auto publisher_ ## NUM = \
+    node_ ## NUM->create_publisher<memory_benchmark::msg::TYPE>("topic_"#NUM, 100); \
   auto subscription_ ## NUM = node_ ## NUM->create_subscription<memory_benchmark::msg::TYPE>( \
     "topic_"#NUM, 100, [](const memory_benchmark::msg::TYPE & msg) {(void)msg;}); \
   executor->add_node(node_ ## NUM); \
@@ -59,7 +61,8 @@
 
 #define NODE_PS_SAME_TOPIC(NUM, TYPE) \
   auto node_ ## NUM = rclcpp::Node::make_shared("node_ps_"#TYPE "_"#NUM, node_options); \
-  auto publisher_ ## NUM = node_ ## NUM->create_publisher<memory_benchmark::msg::TYPE>("topic", 1); \
+  auto publisher_ ## NUM = \
+    node_ ## NUM->create_publisher<memory_benchmark::msg::TYPE>("topic", 1); \
   auto subscription_ ## NUM = node_ ## NUM->create_subscription<memory_benchmark::msg::TYPE>( \
     "topic", 10, [](const memory_benchmark::msg::TYPE & msg) {(void)msg;}); \
   executor->add_node(node_ ## NUM); \

@@ -26,6 +26,8 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+#pragma once
+
 #include "memory_benchmark/msg/m1.hpp"
 #include "memory_benchmark/msg/m2.hpp"
 #include "memory_benchmark/msg/m3.hpp"

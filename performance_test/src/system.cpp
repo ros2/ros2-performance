@@ -62,7 +62,7 @@ static uint64_t parse_line(std::string & line, const bool csv_out)
   size_t non_sep_pos = split_right.find_first_not_of(sep);
   if (non_sep_pos == std::string::npos) {
     std::cerr << "Non-separator character not found after separator in line: " << line << std::endl;
-    return 0; // or handle the error appropriately
+    return 0;  // or handle the error appropriately
   }
 
   line = split_right.substr(non_sep_pos, split_right.length());
