@@ -88,4 +88,4 @@ struct CompositionOptions
   std::optional<std::string> name {"node"};
 };
 
-#endif  // COMPOSITION_BENCHMARK__HELPERS__HELPER_FACTORY_HPP_
+#endif  // COMPOSITION_BENCHMARK__HELPERS__HELPER_OPTIONS_HPP_

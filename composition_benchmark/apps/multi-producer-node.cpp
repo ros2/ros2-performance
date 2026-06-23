@@ -38,7 +38,7 @@
 class MultiProducerNode : public performance_test::PerformanceNode<rclcpp::Node>
 {
 public:
-  MultiProducerNode(const rclcpp::NodeOptions & options = rclcpp::NodeOptions())
+  explicit MultiProducerNode(const rclcpp::NodeOptions & options = rclcpp::NodeOptions())
   : performance_test::PerformanceNode<rclcpp::Node>(
       "MultiProducerNode",
       "",
@@ -47,7 +47,6 @@ public:
     int topics_number = this->declare_parameter<int>("topics_number", 1);
     std::vector<std::function<void ()>> publish_functions;
     for (int i = 0; i < topics_number; i++) {
-
       using Msg = irobot_interfaces_plugin::msg::Stamped10b;
 
       std::string topic_name = "topic_" + std::to_string(i);

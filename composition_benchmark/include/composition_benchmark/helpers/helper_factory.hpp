@@ -29,6 +29,8 @@
 #ifndef COMPOSITION_BENCHMARK__HELPERS__HELPER_FACTORY_HPP_
 #define COMPOSITION_BENCHMARK__HELPERS__HELPER_FACTORY_HPP_
 
+#include <memory>
+#include <string>
 #include <vector>
 
 #include "composition_benchmark/helpers/helper_types.hpp"

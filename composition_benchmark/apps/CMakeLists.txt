@@ -33,10 +33,10 @@ target_link_libraries(composable_simple_main composable_node)
 
 add_executable(composable_pub_sub_main composable_pub_sub_main.cpp)
 target_link_libraries(composable_pub_sub_main
- ${irobot_interfaces_plugin_TARGETS}
- ${performance_test_LIBRARIES}
- composable_publisher
- composable_subscriber
+  ${irobot_interfaces_plugin_TARGETS}
+  ${performance_test_LIBRARIES}
+  composable_publisher
+  composable_subscriber
 )
 
 add_executable(multi_producer multi-producer-node.cpp)

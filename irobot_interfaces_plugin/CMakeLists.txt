@@ -45,7 +45,7 @@ set( CUSTOM_MSGS
   "msg/StampedVector.msg"
 )
 
-set ( CUSTOM_SRVS
+set(CUSTOM_SRVS
   "srv/Stamped10b.srv"
   "srv/Stamped100kb.srv"
   "srv/Stamped1mb.srv"
