@@ -568,7 +568,7 @@ void TemplateFactory::add_periodic_publisher_from_json(
     std::cout << "Error! Publishers must set period_ms or freq_hz in json file" << std::endl;
   }
 
-  auto period = std::chrono::microseconds(static_cast<int>(period_ms * 1000));
+  auto period = std::chrono::microseconds(static_cast<int64_t>(period_ms * 1000));
 
   size_t msg_size = 0;
   if (pub_json.find("msg_size") != pub_json.end()) {
@@ -631,7 +631,7 @@ void TemplateFactory::add_periodic_client_from_json(
     std::cout << "Error! Clients must set period_ms or freq_hz in json file" << std::endl;
   }
 
-  auto period = std::chrono::microseconds(static_cast<int>(period_ms * 1000));
+  auto period = std::chrono::microseconds(static_cast<int64_t>(period_ms * 1000));
 
   rclcpp::QoS custom_qos_profile = get_qos_from_json(client_json);
 
@@ -660,7 +660,7 @@ void TemplateFactory::add_periodic_action_client_from_json(
     assert(0 && "Error! Action Clients must set period_ms or freq_hz in json file");
   }
 
-  auto period = std::chrono::microseconds(static_cast<int>(period_ms * 1000));
+  auto period = std::chrono::microseconds(static_cast<int64_t>(period_ms * 1000));
 
   rclcpp::QoS custom_qos_profile = get_qos_from_json(action_client_json);
 
