@@ -1,11 +1,30 @@
-/* Software License Agreement (BSD License)
- *
- *  Copyright (c) 2019, iRobot ROS
- *  All rights reserved.
- *
- *  This file is part of ros2-performance, which is released under BSD-3-Clause.
- *  You may use, distribute and modify this code under the BSD-3-Clause license.
- */
+// Copyright 2019 iRobot ROS
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are met:
+//
+//    * Redistributions of source code must retain the above copyright
+//      notice, this list of conditions and the following disclaimer.
+//
+//    * Redistributions in binary form must reproduce the above copyright
+//      notice, this list of conditions and the following disclaimer in the
+//      documentation and/or other materials provided with the distribution.
+//
+//    * Neither the name of the iRobot ROS nor the names of its
+//      contributors may be used to endorse or promote products derived from
+//      this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
 
 #include <chrono>
 #include <iostream>
@@ -69,8 +88,8 @@ void Options::parse(int argc, char ** argv)
       std::to_string(
         resources_sampling_per_ms)), "msec")(
     "x, executor",
-    "system executor:\n\t\t\t\t1:SingleThreadedExecutor. 2:EventsExecutor. \
-    3:MultiThreadedExecutor.",
+    "system executor:\n\t\t\t\t1:SingleThreadedExecutor. 2:EventsExecutor. "
+    "3:MultiThreadedExecutor.",
     cxxopts::value<int>(executor)->default_value(std::to_string(executor)), "<1/2/3>")(
     "n, node", "the node type:\n\t\t\t\t1:Node. 2:LifecycleNode",
     cxxopts::value<int>(node)->default_value(std::to_string(node)), "<1/2>")(
@@ -114,21 +133,21 @@ void Options::parse(int argc, char ** argv)
     }
 
     if (ipc_option != "off" && ipc_option != "on") {
-      throw cxxopts::argument_incorrect_type(ipc_option);
+      throw cxxopts::exceptions::incorrect_argument_type(ipc_option);
     }
 
     if (tracking_enabled_option != "off" && tracking_enabled_option != "on") {
-      throw cxxopts::argument_incorrect_type(tracking_enabled_option);
+      throw cxxopts::exceptions::incorrect_argument_type(tracking_enabled_option);
     }
 
     if (csv_out_option != "off" && csv_out_option != "on") {
-      throw cxxopts::argument_incorrect_type(csv_out_option);
+      throw cxxopts::exceptions::incorrect_argument_type(csv_out_option);
     }
     if (result_folder_name_option != "" && (result.count("topology") == 1)) {
       // Only allow to set folder name if a single topology passed
       result_folder_name = result_folder_name_option;
     }
-  } catch (const cxxopts::OptionException & e) {
+  } catch (const cxxopts::exceptions::exception & e) {
     std::cout << "Error parsing options. " << e.what() << std::endl;
     exit(1);
   }

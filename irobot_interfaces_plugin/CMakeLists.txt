@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.28)
 project(irobot_interfaces_plugin)
 
 # Default to C++14
@@ -45,7 +45,7 @@ set( CUSTOM_MSGS
   "msg/StampedVector.msg"
 )
 
-set ( CUSTOM_SRVS
+set(CUSTOM_SRVS
   "srv/Stamped10b.srv"
   "srv/Stamped100kb.srv"
   "srv/Stamped1mb.srv"

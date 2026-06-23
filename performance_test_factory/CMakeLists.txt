@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.28)
 project(performance_test_factory)
 
 # Default to C++14
@@ -74,42 +74,15 @@ if(BUILD_TESTING)
   add_subdirectory(test)
 
   # Linters
-  find_package(ament_cmake_copyright REQUIRED)
   find_package(ament_cmake_cppcheck REQUIRED)
   find_package(ament_cmake_cpplint REQUIRED)
-  find_package(ament_cmake_lint_cmake REQUIRED)
   find_package(ament_cmake_uncrustify REQUIRED)
   find_package(ament_cmake_xmllint REQUIRED)
 
-  set(_linter_excludes_dir external)
-  file(GLOB_RECURSE _linter_excludes_files FOLLOW_SYMLINKS
-    "${CMAKE_CURRENT_SOURCE_DIR}/external/*.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/external/*.hpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/external/*.hh"
-    "${CMAKE_CURRENT_SOURCE_DIR}/external/*.h"
-    "${CMAKE_CURRENT_SOURCE_DIR}/external/*.cc"
-    "${CMAKE_CURRENT_SOURCE_DIR}/external/*.c"
-  )
-
-  ament_cppcheck(
-    EXCLUDE
-      external/cxxopts/test/catch.hpp
-      external/cxxopts/test/options.cpp
-      external/json/test/src/unit-iterators1.cpp
-      external/json/test/src/unit-iterators2.cpp
-      external/json/benchmarks/thirdparty/benchmark/src/benchmark_register.cc
-      external/json/benchmarks/src/benchmarks.cpp
-      external/json/single_include/nlohmann/json.hpp
-      external/json/test/thirdparty/catch/catch.hpp
-      external/json/test/thirdparty/Fuzzer/FuzzerLoop.cpp
-      external/json/test/thirdparty/Fuzzer/afl/afl_driver.cpp
-    LANGUAGE C++
-  )
-  ament_cpplint(EXCLUDE ${_linter_excludes_files})
-  ament_uncrustify(
-    EXCLUDE ${_linter_excludes_files}
-    LANGUAGE C++
-  )
+  set(_factory_lint_dirs include src test)
+  ament_cppcheck(${_factory_lint_dirs} LANGUAGE C++)
+  ament_cpplint(${_factory_lint_dirs})
+  ament_uncrustify(${_factory_lint_dirs} LANGUAGE C++)
   ament_xmllint()
 endif()
 

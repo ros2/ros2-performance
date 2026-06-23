@@ -1,6 +1,9 @@
 [submodule "performance_test_factory/external/json"]
 	path = performance_test_factory/external/json
 	url = https://github.com/nlohmann/json
+	version = v3.12.0
+
 [submodule "performance_test_factory/external/cxxopts"]
 	path = performance_test_factory/external/cxxopts
 	url = https://github.com/jarro2783/cxxopts
+	version = v3.3.1

@@ -1,11 +1,30 @@
-/* Software License Agreement (BSD License)
- *
- *  Copyright (c) 2019, iRobot ROS
- *  All rights reserved.
- *
- *  This file is part of ros2-performance, which is released under BSD-3-Clause.
- *  You may use, distribute and modify this code under the BSD-3-Clause license.
- */
+// Copyright 2019 iRobot ROS
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are met:
+//
+//    * Redistributions of source code must retain the above copyright
+//      notice, this list of conditions and the following disclaimer.
+//
+//    * Redistributions in binary form must reproduce the above copyright
+//      notice, this list of conditions and the following disclaimer in the
+//      documentation and/or other materials provided with the distribution.
+//
+//    * Neither the name of the iRobot ROS nor the names of its
+//      contributors may be used to endorse or promote products derived from
+//      this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
 
 #include <sys/resource.h>
 #include <sys/types.h>
@@ -53,7 +72,7 @@ void ResourceUsageLogger::start(std::chrono::milliseconds period)
 
   // create a detached thread that monitors resource usage periodically
   m_logger_thread = std::thread(
-    [ = ]() {
+    [ =, this]() {
       int64_t i = 1;
       while (m_is_logging) {
         // Updating m_t1_user and m_t1_real here will have the effect of calculating
@@ -135,8 +154,18 @@ void ResourceUsageLogger::_get()
     std::chrono::duration_cast<std::chrono::milliseconds>(t2_real - m_t1_real).count();
   m_resources.cpu_usage = time_elapsed_user_ms / (time_elapsed_real_ms * n_threads) * 100;
 
-  // Get mallinfo
-#if (defined(__UCLIBC__) || defined(__GLIBC__))
+  // Get mallinfo. Prefer mallinfo2 (glibc >= 2.33): its size_t fields avoid the
+  // int overflow in the legacy mallinfo struct once the arena exceeds 2 GB.
+#if defined(__GLIBC__)
+#  if __GLIBC_PREREQ(2, 33)
+  auto mem_info = mallinfo2();
+#  else
+  auto mem_info = mallinfo();
+#  endif
+  m_resources.mem_arena_KB = mem_info.arena >> 10;
+  m_resources.mem_in_use_KB = mem_info.uordblks >> 10;
+  m_resources.mem_mmap_KB = mem_info.hblkhd >> 10;
+#elif defined(__UCLIBC__)
   auto mem_info = mallinfo();
   m_resources.mem_arena_KB = mem_info.arena >> 10;
   m_resources.mem_in_use_KB = mem_info.uordblks >> 10;

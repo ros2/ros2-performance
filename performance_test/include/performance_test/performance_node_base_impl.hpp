@@ -1,11 +1,30 @@
-/* Software License Agreement (BSD License)
- *
- *  Copyright (c) 2019, iRobot ROS
- *  All rights reserved.
- *
- *  This file is part of ros2-performance, which is released under BSD-3-Clause.
- *  You may use, distribute and modify this code under the BSD-3-Clause license.
- */
+// Copyright 2019 iRobot ROS
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are met:
+//
+//    * Redistributions of source code must retain the above copyright
+//      notice, this list of conditions and the following disclaimer.
+//
+//    * Redistributions in binary form must reproduce the above copyright
+//      notice, this list of conditions and the following disclaimer in the
+//      documentation and/or other materials provided with the distribution.
+//
+//    * Neither the name of the iRobot ROS nor the names of its
+//      contributors may be used to endorse or promote products derived from
+//      this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
 
 #ifndef PERFORMANCE_TEST__PERFORMANCE_NODE_BASE_IMPL_HPP_
 #define PERFORMANCE_TEST__PERFORMANCE_NODE_BASE_IMPL_HPP_
@@ -245,7 +264,7 @@ void PerformanceNodeBase::add_action_server(
           tracker.frequency(),
           tracking_number++,
           msg_size
-        );
+      );
 
       goal_handle->succeed(result);
     };
@@ -484,33 +503,35 @@ void PerformanceNodeBase::send_action_goal_request(const std::string & name)
   typename rclcpp_action::Client<Action>::SendGoalOptions goal_options;
 
   goal_options.goal_response_callback = [this, name, &tracker](auto goal_handle_future) {
-    auto goal_handle = goal_handle_future.get();
-    if (!goal_handle) {
-      RCLCPP_WARN(this->get_node_logger(), "Goal was rejected by action server for action %s", name.c_str());
-      return;
-    }
-    // RCLCPP_INFO(this->get_node_logger(), "Goal accepted by action server for action %s", name.c_str());
-  };
+      auto goal_handle = goal_handle_future.get();
+      if (!goal_handle) {
+        RCLCPP_WARN(this->get_node_logger(), "Goal was rejected by action server for action %s",
+          name.c_str());
+        return;
+      }
+    };
 
   goal_options.result_callback =
     [this, name, &tracker](
-      const typename rclcpp_action::ClientGoalHandle<Action>::WrappedResult & result)
-  {
-    if (result.code == rclcpp_action::ResultCode::SUCCEEDED) {
+    const typename rclcpp_action::ClientGoalHandle<Action>::WrappedResult & result)
+    {
+      if (result.code == rclcpp_action::ResultCode::SUCCEEDED) {
       // RCLCPP_INFO(this->get_node_logger(), "Result received for action %s", name.c_str());
-      tracker.scan(result.result->header, m_node_interfaces.clock->get_clock()->now(), m_events_logger);
-    } else {
-      RCLCPP_WARN(this->get_node_logger(), "Action %s failed with result code %d", name.c_str(), static_cast<int>(result.code));
-    }
+        tracker.scan(result.result->header, m_node_interfaces.clock->get_clock()->now(),
+          m_events_logger);
+      } else {
+        RCLCPP_WARN(this->get_node_logger(), "Action %s failed with result code %d", name.c_str(),
+          static_cast<int>(result.code));
+      }
 
-    m_action_client_lock = false;
-  };
+      m_action_client_lock = false;
+    };
 
   // Optional feedback callback (if feedback is important for your action)
   goal_options.feedback_callback = [this, &tracker](auto, const auto & feedback) {
     // RCLCPP_INFO(this->get_node_logger(), "Feedback received");
-    tracker.scan(feedback->header, m_node_interfaces.clock->get_clock()->now(), m_events_logger);
-  };
+      tracker.scan(feedback->header, m_node_interfaces.clock->get_clock()->now(), m_events_logger);
+    };
 
   client->async_send_goal(goal, goal_options);
 }

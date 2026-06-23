@@ -13,6 +13,9 @@ target_link_libraries(base_publisher_main
   ${performance_test_factory_LIBRARIES}
   base_node
 )
+target_include_directories(base_publisher_main PRIVATE
+  ${performance_test_factory_INCLUDE_DIRS}
+)
 
 add_executable(base_subscriber_main base_subscriber_main.cpp)
 target_link_libraries(base_subscriber_main
@@ -21,16 +24,19 @@ target_link_libraries(base_subscriber_main
   ${performance_test_factory_LIBRARIES}
   base_node
 )
+target_include_directories(base_subscriber_main PRIVATE
+  ${performance_test_factory_INCLUDE_DIRS}
+)
 
 add_executable(composable_simple_main composable_simple_main.cpp)
 target_link_libraries(composable_simple_main composable_node)
 
 add_executable(composable_pub_sub_main composable_pub_sub_main.cpp)
 target_link_libraries(composable_pub_sub_main
- ${irobot_interfaces_plugin_TARGETS}
- ${performance_test_LIBRARIES}
- composable_publisher
- composable_subscriber
+  ${irobot_interfaces_plugin_TARGETS}
+  ${performance_test_LIBRARIES}
+  composable_publisher
+  composable_subscriber
 )
 
 add_executable(multi_producer multi-producer-node.cpp)

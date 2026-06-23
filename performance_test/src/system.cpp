@@ -1,11 +1,30 @@
-/* Software License Agreement (BSD License)
- *
- *  Copyright (c) 2019, iRobot ROS
- *  All rights reserved.
- *
- *  This file is part of ros2-performance, which is released under BSD-3-Clause.
- *  You may use, distribute and modify this code under the BSD-3-Clause license.
- */
+// Copyright 2019 iRobot ROS
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are met:
+//
+//    * Redistributions of source code must retain the above copyright
+//      notice, this list of conditions and the following disclaimer.
+//
+//    * Redistributions in binary form must reproduce the above copyright
+//      notice, this list of conditions and the following disclaimer in the
+//      documentation and/or other materials provided with the distribution.
+//
+//    * Neither the name of the iRobot ROS nor the names of its
+//      contributors may be used to endorse or promote products derived from
+//      this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
 
 #include <pthread.h>
 
@@ -43,7 +62,7 @@ static uint64_t parse_line(std::string & line, const bool csv_out)
   size_t non_sep_pos = split_right.find_first_not_of(sep);
   if (non_sep_pos == std::string::npos) {
     std::cerr << "Non-separator character not found after separator in line: " << line << std::endl;
-    return 0; // or handle the error appropriately
+    return 0;  // or handle the error appropriately
   }
 
   line = split_right.substr(non_sep_pos, split_right.length());
@@ -259,8 +278,10 @@ void System::log_latency_all_stats(
       auto action_server_trackers = n->action_server_trackers();
       clients.insert(clients.end(), client_trackers.begin(), client_trackers.end());
       services.insert(services.end(), service_trackers.begin(), service_trackers.end());
-      action_clients.insert(action_clients.end(), action_client_trackers.begin(), action_client_trackers.end());
-      action_servers.insert(action_servers.end(), action_server_trackers.begin(), action_server_trackers.end());
+      action_clients.insert(action_clients.end(), action_client_trackers.begin(),
+          action_client_trackers.end());
+      action_servers.insert(action_servers.end(), action_server_trackers.begin(),
+          action_server_trackers.end());
     }
 
     performance_metrics::log_trackers_latency_all_stats(
@@ -316,9 +337,11 @@ void System::log_latency_total_stats(
       auto client_trackers = n->client_trackers();
       all_trackers.insert(all_trackers.end(), client_trackers.begin(), client_trackers.end());
       auto action_client_trackers = n->action_client_trackers();
-      all_trackers.insert(all_trackers.end(), action_client_trackers.begin(), action_client_trackers.end());
+      all_trackers.insert(all_trackers.end(), action_client_trackers.begin(),
+          action_client_trackers.end());
       auto action_server_trackers = n->action_server_trackers();
-      all_trackers.insert(all_trackers.end(), action_server_trackers.begin(), action_server_trackers.end());
+      all_trackers.insert(all_trackers.end(), action_server_trackers.begin(),
+          action_server_trackers.end());
     }
   }
   performance_metrics::log_trackers_latency_total_stats(stream, all_trackers, m_csv_out);
@@ -328,14 +351,14 @@ void System::set_latency_callback(
   performance_metrics::ResourceUsageLogger & ru_logger)
 {
   // Get all subscription trackers for later use
-  for (const auto& node : m_nodes) {
+  for (const auto & node : m_nodes) {
     auto sub_trackers = node->sub_trackers_ptr();
     m_all_subscription_trackers.insert(
       m_all_subscription_trackers.end(), sub_trackers.begin(), sub_trackers.end());
   }
 
   ru_logger.set_get_latency_callback(
-    [this]() { return performance_metrics::get_trackers_avg_latency(m_all_subscription_trackers); });
+    [this]() {return performance_metrics::get_trackers_avg_latency(m_all_subscription_trackers);});
 }
 
 void System::print_aggregate_stats(
@@ -375,9 +398,10 @@ void System::print_aggregate_stats(
       } else {
         std::cout << "[SystemLatencyLogger]: Error. Could not open file " << filename << std::endl;
       }
-    } catch (const std::out_of_range& e) {
-      std::cerr << "Out of range error: " << e.what() << " while processing json: " << json << std::endl;
-    } catch (const std::exception& e) {
+    } catch (const std::out_of_range & e) {
+      std::cerr << "Out of range error: " << e.what() << " while processing json: " << json <<
+        std::endl;
+    } catch (const std::exception & e) {
       std::cerr << "Exception: " << e.what() << " while processing json: " << json << std::endl;
     }
   }
