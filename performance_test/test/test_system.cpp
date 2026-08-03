@@ -28,7 +28,11 @@
 
 #include <gtest/gtest.h>
 
+#include <filesystem>
+#include <fstream>
 #include <memory>
+#include <optional>
+#include <string>
 #include <vector>
 
 #include "performance_test/system.hpp"
@@ -163,4 +167,51 @@ TEST_F(TestSystem, SystemDifferentQoSTest)
 
   // they have incompatible qos so they shouldn't communicate
   ASSERT_EQ(tracker.received(), (uint64_t)0);
+}
+
+// Regression guard for the per-topology results subdir fix. When irobot_benchmark
+// forks one process per topology, each fork writes its latency_total.txt into
+// <results-dir>/<topology_stem>/. print_aggregate_stats must read those
+// per-topology subdirs and sum across them.
+// Before the fix, every fork shared <results-dir> directly,
+// clobbering each other, and the aggregate silently read a single
+// (or missing) file and reported zeros.
+TEST_F(TestSystem, AggregateStatsReadsPerTopologySubdirs)
+{
+  namespace fs = std::filesystem;
+  const fs::path base = fs::temp_directory_path() / "perf_agg_regression";
+  fs::remove_all(base);
+
+  // Header line + a data line, matching the per-process "*_total.txt" format:
+  // received_msgs,mean_us,late_msgs,late_perc,too_late_msgs,too_late_perc,lost_msgs,lost_perc
+  auto write_totals = [](const fs::path & dir, const std::string & data_line) {
+      fs::create_directories(dir);
+      std::ofstream file(dir / "latency_total.txt");
+      file <<
+        "received_msgs,mean_us,late_msgs,late_perc,"
+        "too_late_msgs,too_late_perc,lost_msgs,lost_perc\n";
+      file << data_line << "\n";
+    };
+  // Two topologies -> two per-topology subdirs under the results dir.
+  write_totals(base / "topology_a", "100,50,0,0,0,0,0,0");
+  write_totals(base / "topology_b", "200,80,0,0,0,0,0,0");
+
+  performance_test::System system(
+    performance_test::ExecutorType::SINGLE_THREADED_EXECUTOR,
+    performance_test::SpinType::SPIN, std::nullopt, /*csv_out=*/ true);
+
+  const std::vector<std::string> topology_json_list =
+  {"some/dir/topology_a.json", "other/topology_b.json"};
+
+  testing::internal::CaptureStdout();
+  system.print_aggregate_stats(topology_json_list, base.string());
+  const std::string output = testing::internal::GetCapturedStdout();
+
+  fs::remove_all(base);
+
+  // Both per-topology files must have been opened (no error) and received_msgs
+  // summed across them (100 + 200 = 300). A regression to the flat
+  // <results-dir>/latency_total.txt layout would fail to open them and sum to 0.
+  EXPECT_EQ(output.find("Could not open file"), std::string::npos) << output;
+  EXPECT_NE(output.find("300"), std::string::npos) << output;
 }
