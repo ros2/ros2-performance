@@ -51,6 +51,7 @@ enum class ExecutorType
   SINGLE_THREADED_EXECUTOR = 1,
   EVENTS_EXECUTOR = 2,
   MULTI_THREAD_EXECUTOR = 3,
+  EVENTS_CBG_EXECUTOR = 4,
 };
 
 enum class SpinType
@@ -62,7 +63,10 @@ enum class SpinType
 
 std::ostream & operator<<(std::ostream & os, const ExecutorType & t);
 
-std::shared_ptr<rclcpp::Executor> make_executor(ExecutorType type);
+// num_threads = 0 means hardware_concurrency for both thread-pool executors
+// (MultiThreadedExecutor and EventsCBGExecutor). Ignored for the single-threaded
+// executors. Defaulted so existing callers compile unchanged.
+std::shared_ptr<rclcpp::Executor> make_executor(ExecutorType type, size_t num_threads = 0);
 
 void sleep_task(std::chrono::milliseconds task_duration);
 

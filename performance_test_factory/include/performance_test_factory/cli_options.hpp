@@ -49,6 +49,9 @@ public:
   bool ipc;
   bool ros_params;
   int executor;
+  // Number of threads for thread-pool executors (MultiThreadedExecutor,
+  // EventsCBGExecutor). 0 means hardware_concurrency.
+  int num_threads;
   int node;
   int duration_sec;
   int resources_sampling_per_ms;
