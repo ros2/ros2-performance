@@ -164,7 +164,6 @@ int main(int argc, char ** argv)
   std::cout << options << "\n" << "Start test!" << std::endl;
 
   // Fork processes and select topology json for this process
-  pid_t pid = getpid();
   size_t process_index = performance_test::fork_process(options.topology_json_list.size());
   std::string topology_json = options.topology_json_list[process_index];
 
@@ -217,10 +216,12 @@ int main(int argc, char ** argv)
   ros2_system->save_latency_all_stats(result_dir_name);
   ros2_system->save_latency_total_stats(latency_total_output_path);
 
-  // Parent process: wait for children to exit and print system stats
-  if (pid != 0) {
+  // Only the parent process aggregates the per-process results
+  bool is_parent = performance_test::is_parent_process(
+    process_index, options.topology_json_list.size());
+  if (is_parent) {
     if (options.topology_json_list.size() > 1) {
-      waitpid(getpid() + 1, &pid, 0);
+      while (waitpid(-1, nullptr, 0) > 0) {}
     }
     std::cout << "System total:" << std::endl;
     // Pass the top-level --results-dir (not the per-topology subdir) so

@@ -42,6 +42,20 @@ namespace performance_test
  */
 size_t fork_process(size_t num_processes);
 
+/**
+ * @brief Whether the process with the given index (as returned by fork_process)
+ * is the parent that should aggregate results across all processes.
+ *
+ * fork_process keeps the last index (num_processes - 1) for the invoking parent
+ * and assigns 0..num_processes-2 to the forked children. Only the parent should
+ * reap children and aggregate their per-process results.
+ *
+ * @param process_index index returned by fork_process, in [0, num_processes-1]
+ * @param num_processes total number of processes N
+ * @return true iff process_index identifies the parent process
+ */
+bool is_parent_process(size_t process_index, size_t num_processes);
+
 }  // namespace performance_test
 
 #endif  // PERFORMANCE_TEST__UTILS__FORK_PROCESS_HPP_
