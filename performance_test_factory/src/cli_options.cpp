@@ -93,8 +93,8 @@ void Options::parse(int argc, char ** argv)
     "3:MultiThreadedExecutor. 4:EventsCBGExecutor",
     cxxopts::value<int>(executor)->default_value(std::to_string(executor)), "<1/2/3/4>")(
     "T, threads",
-    "number of threads for thread-pool executors (MultiThreadedExecutor, EventsCBGExecutor); \
-    0 = hardware_concurrency; ignored for single-threaded executors",
+    "number of threads for thread-pool executors (MultiThreadedExecutor, EventsCBGExecutor); "
+    "0 = hardware_concurrency; ignored for single-threaded executors",
     cxxopts::value<int>(num_threads)->default_value(std::to_string(num_threads)), "N")(
     "n, node", "the node type:\n\t\t\t\t1:Node. 2:LifecycleNode",
     cxxopts::value<int>(node)->default_value(std::to_string(node)), "<1/2>")(

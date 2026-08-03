@@ -75,14 +75,13 @@ std::shared_ptr<rclcpp::Executor> make_executor(ExecutorType type, size_t num_th
       executor = std::make_shared<rclcpp::executors::MultiThreadedExecutor>(
         rclcpp::ExecutorOptions(), num_threads);
       break;
-    case ExecutorType::EVENTS_CBG_EXECUTOR: {
+    case ExecutorType::EVENTS_CBG_EXECUTOR:
       // EventsCBGExecutor has no internal "use default" sentinel, so resolve 0
       // to hardware_concurrency here to match MultiThreadedExecutor's behavior.
-      const size_t cbg_threads = (num_threads <= 0) ? std::thread::hardware_concurrency() : num_threads;
       executor = std::make_shared<rclcpp::executors::EventsCBGExecutor>(
-        rclcpp::ExecutorOptions(), cbg_threads);
+        rclcpp::ExecutorOptions(),
+        (num_threads <= 0) ? std::thread::hardware_concurrency() : num_threads);
       break;
-    }
   }
 
   return executor;
