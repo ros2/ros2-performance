@@ -37,6 +37,7 @@
 
 #include "performance_test/system.hpp"
 #include "performance_test/performance_node.hpp"
+#include "performance_test/utils/fork_process.hpp"
 #include "performance_test_msgs/msg/sample.hpp"
 #include "performance_test_msgs/srv/sample.hpp"
 
@@ -214,4 +215,26 @@ TEST_F(TestSystem, AggregateStatsReadsPerTopologySubdirs)
   // <results-dir>/latency_total.txt layout would fail to open them and sum to 0.
   EXPECT_EQ(output.find("Could not open file"), std::string::npos) << output;
   EXPECT_NE(output.find("300"), std::string::npos) << output;
+}
+
+// Regression guard for multi-process aggregation.
+TEST(ForkProcessParent, OnlyLastIndexIsParent)
+{
+  // Single process: the sole process is the parent and aggregates itself.
+  EXPECT_TRUE(performance_test::is_parent_process(0, 1));
+
+  // Two processes: index 1 (the invoker/parent) aggregates; index 0 (child) does not.
+  EXPECT_FALSE(performance_test::is_parent_process(0, 2));
+  EXPECT_TRUE(performance_test::is_parent_process(1, 2));
+
+  // N processes: exactly one parent, and it is the last index.
+  const size_t n = 5;
+  size_t parent_count = 0;
+  for (size_t i = 0; i < n; ++i) {
+    if (performance_test::is_parent_process(i, n)) {
+      ++parent_count;
+    }
+  }
+  EXPECT_EQ(parent_count, 1u);
+  EXPECT_TRUE(performance_test::is_parent_process(n - 1, n));
 }
