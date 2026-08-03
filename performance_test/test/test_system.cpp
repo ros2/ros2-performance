@@ -172,9 +172,9 @@ TEST_F(TestSystem, SystemDifferentQoSTest)
 // Regression guard for the per-topology results subdir fix. When irobot_benchmark
 // forks one process per topology, each fork writes its latency_total.txt into
 // <results-dir>/<topology_stem>/. print_aggregate_stats must read those
-// per-topology subdirs and sum across them. 
+// per-topology subdirs and sum across them.
 // Before the fix, every fork shared <results-dir> directly,
-// clobbering each other, and the aggregate silently read a single 
+// clobbering each other, and the aggregate silently read a single
 // (or missing) file and reported zeros.
 TEST_F(TestSystem, AggregateStatsReadsPerTopologySubdirs)
 {
