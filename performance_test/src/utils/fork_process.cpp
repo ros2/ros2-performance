@@ -54,4 +54,9 @@ size_t fork_process(size_t num_processes)
   return i;
 }
 
+bool is_parent_process(size_t process_index, size_t num_processes)
+{
+  return process_index + 1 >= num_processes;
+}
+
 }  // namespace performance_test
