@@ -51,7 +51,8 @@ public:
     bool use_ros_params = true,
     bool verbose_mode = false,
     const std::string & ros2_namespace = "",
-    NodeType node_type = NodeType::RCLCPP_NODE);
+    NodeType node_type = NodeType::RCLCPP_NODE,
+    const std::string & callback_group_type = "mutually_exclusive");
 
   /**
    * Helper functions for creating several nodes at the same time.
@@ -64,7 +65,8 @@ public:
     bool use_ros_params = true,
     bool verbose = false,
     const std::string & ros2_namespace = "",
-    int executor_id = 0);
+    int executor_id = 0,
+    const std::string & callback_group_type = "mutually_exclusive");
 
   std::vector<performance_test::PerformanceNodeBase::SharedPtr> create_subscriber_nodes(
     int start_id,
@@ -202,6 +204,7 @@ private:
   bool m_verbose_mode;
   std::string m_ros2_namespace;
   NodeType m_node_type;
+  std::string m_callback_group_type;
 };
 
 }  // namespace performance_test_factory
