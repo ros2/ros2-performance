@@ -66,3 +66,29 @@ TEST(ExecutorsTest, SleepTaskTest)
   sleeping_thread.join();
   EXPECT_TRUE(sleep_done);
 }
+
+TEST(ExecutorsTest, MakeExecutorTest)
+{
+  rclcpp::init(0, nullptr);
+
+  EXPECT_NE(
+    nullptr,
+    performance_test::make_executor(performance_test::ExecutorType::SINGLE_THREADED_EXECUTOR));
+  EXPECT_NE(
+    nullptr,
+    performance_test::make_executor(performance_test::ExecutorType::EVENTS_EXECUTOR));
+
+  // Thread-pool executors honour num_threads; 0 means hardware_concurrency.
+  for (size_t num_threads : {size_t{0}, size_t{1}, size_t{4}}) {
+    EXPECT_NE(
+      nullptr,
+      performance_test::make_executor(
+        performance_test::ExecutorType::MULTI_THREAD_EXECUTOR, num_threads));
+    EXPECT_NE(
+      nullptr,
+      performance_test::make_executor(
+        performance_test::ExecutorType::EVENTS_CBG_EXECUTOR, num_threads));
+  }
+
+  rclcpp::shutdown();
+}
