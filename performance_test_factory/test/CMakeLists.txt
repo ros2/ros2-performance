@@ -10,3 +10,8 @@ target_link_libraries(test_factory
   ${LIBRARY_NAME}
   ${performance_test_msgs_TARGETS}
 )
+
+ament_add_gtest(test_cli_options test_cli_options.cpp)
+target_link_libraries(test_cli_options
+  ${LIBRARY_NAME}
+)
