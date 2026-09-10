@@ -104,12 +104,16 @@ void PerformanceNodeBase::add_subscriber_by_msg_variant(
     work_duration,
     std::placeholders::_1);
 
+  rclcpp::SubscriptionOptions subscription_options;
+  subscription_options.callback_group = m_callback_group;
+
   rclcpp::SubscriptionBase::SharedPtr sub = rclcpp::create_subscription<Msg>(
     m_node_interfaces.parameters,
     m_node_interfaces.topics,
     topic_name,
     qos_profile,
-    callback_function);
+    callback_function,
+    subscription_options);
 
   this->store_subscription(sub, topic_name, tracking_options);
 }
@@ -170,7 +174,7 @@ void PerformanceNodeBase::add_server(
     service_name,
     callback_function,
     qos_profile.get_rmw_qos_profile(),
-    nullptr);
+    m_callback_group);
 
   this->store_server(server, service_name, performance_metrics::Tracker::Options());
 }
@@ -207,7 +211,7 @@ void PerformanceNodeBase::add_client(
     m_node_interfaces.services,
     service_name,
     qos_profile,
-    nullptr);
+    m_callback_group);
 
   this->store_client(client, service_name, performance_metrics::Tracker::Options());
 }
@@ -278,7 +282,9 @@ void PerformanceNodeBase::add_action_server(
     action_name,
     handle_goal,
     handle_cancel,
-    handle_accepted
+    handle_accepted,
+    rcl_action_server_get_default_options(),
+    m_callback_group
   );
 
   this->store_action_server(action_server, action_name, performance_metrics::Tracker::Options());
@@ -316,7 +322,7 @@ void PerformanceNodeBase::add_action_client(
     m_node_interfaces.logging,
     m_node_interfaces.waitables,
     action_name,
-    nullptr,  // No callback group in this example
+    m_callback_group,
     rcl_action_client_get_default_options());
 
   this->store_action_client(client, action_name, performance_metrics::Tracker::Options());
