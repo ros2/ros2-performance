@@ -44,6 +44,7 @@ Options::Options()
   ipc = true;
   executor = 1;
   num_threads = 0;
+  callback_group_type = "mutually_exclusive";
   node = 1;
   ros_params = true;
   duration_sec = 5;
@@ -72,6 +73,7 @@ void Options::parse(int argc, char ** argv)
   std::string tracking_enabled_option;
   std::string csv_out_option;
   std::string result_folder_name_option;
+  std::string callback_group_type_option;
   options.positional_help("FILE [FILE...]").show_positional_help();
   options.parse_positional({"topology"});
   options.add_options()("h,help", "print help")(
@@ -96,6 +98,10 @@ void Options::parse(int argc, char ** argv)
     "number of threads for thread-pool executors (MultiThreadedExecutor, EventsCBGExecutor); "
     "0 = hardware_concurrency; ignored for single-threaded executors",
     cxxopts::value<int>(num_threads)->default_value(std::to_string(num_threads)), "N")(
+    "callback-group-type",
+    "callback group used by every entity a node creates",
+    cxxopts::value<std::string>(callback_group_type_option)->default_value(callback_group_type),
+    "mutually_exclusive/reentrant")(
     "n, node", "the node type:\n\t\t\t\t1:Node. 2:LifecycleNode",
     cxxopts::value<int>(node)->default_value(std::to_string(node)), "<1/2>")(
     "tracking", "compute and logs detailed statistics and events",
@@ -148,6 +154,12 @@ void Options::parse(int argc, char ** argv)
     if (csv_out_option != "off" && csv_out_option != "on") {
       throw cxxopts::exceptions::incorrect_argument_type(csv_out_option);
     }
+
+    if (callback_group_type_option != "mutually_exclusive" &&
+      callback_group_type_option != "reentrant")
+    {
+      throw cxxopts::exceptions::incorrect_argument_type(callback_group_type_option);
+    }
     if (result_folder_name_option != "") {
       // With multiple topologies, each forked process appends its topology
       // basename as a subdirectory of this path so the per-process result
@@ -162,6 +174,7 @@ void Options::parse(int argc, char ** argv)
 
   ipc = (ipc_option == "on" ? true : false);
   ros_params = (ros_params_option == "on" ? true : false);
+  callback_group_type = callback_group_type_option;
   tracking_options.is_enabled = (tracking_enabled_option == "on" ? true : false);
   csv_out = (csv_out_option == "on" ? true : false);
 }
@@ -189,6 +202,8 @@ std::ostream & operator<<(std::ostream & os, const Options & options)
       os << "default" << std::endl;
     }
   }
+
+  os << "callback_group_type: " << options.callback_group_type << std::endl;
 
   // Get the node type from options
   auto node_type = static_cast<performance_test_factory::NodeType>(options.node);

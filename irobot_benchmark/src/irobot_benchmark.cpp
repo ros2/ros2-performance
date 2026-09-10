@@ -130,7 +130,8 @@ create_ros2_nodes(
     options.ros_params,
     false,
     "",
-    node_type);
+    node_type,
+    options.callback_group_type);
 
   auto nodes_vec = factory.parse_topology_from_json(
     topology_json,

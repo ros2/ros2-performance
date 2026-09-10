@@ -54,12 +54,14 @@ TemplateFactory::TemplateFactory(
   bool use_ros_params,
   bool verbose_mode,
   const std::string & ros2_namespace,
-  NodeType node_type)
+  NodeType node_type,
+  const std::string & callback_group_type)
 : m_use_ipc(use_ipc),
   m_use_ros_params(use_ros_params),
   m_verbose_mode(verbose_mode),
   m_ros2_namespace(ros2_namespace),
-  m_node_type(node_type)
+  m_node_type(node_type),
+  m_callback_group_type(callback_group_type)
 {}
 
 performance_test::PerformanceNodeBase::SharedPtr
@@ -69,13 +71,18 @@ TemplateFactory::create_node(
   bool use_ros_params,
   bool verbose,
   const std::string & ros2_namespace,
-  int executor_id)
+  int executor_id,
+  const std::string & callback_group_type)
 {
   rclcpp::NodeOptions node_options = rclcpp::NodeOptions();
   node_options.use_intra_process_comms(use_ipc);
   node_options.start_parameter_services(use_ros_params);
   node_options.start_parameter_event_publisher(use_ros_params);
-  node_options.parameter_overrides({{"executor_id", executor_id}});
+  node_options.parameter_overrides(
+    {
+      {"executor_id", executor_id},
+      {"callback_group_type", callback_group_type},
+    });
 
   performance_test::PerformanceNodeBase::SharedPtr node;
 
@@ -499,7 +506,8 @@ TemplateFactory::create_node_from_json(
     m_use_ros_params,
     m_verbose_mode,
     node_namespace,
-    executor_id);
+    executor_id,
+    m_callback_group_type);
 
   return node;
 }

@@ -28,8 +28,10 @@
 
 #include <gtest/gtest.h>
 
+#include <chrono>
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "rclcpp_lifecycle/lifecycle_node.hpp"
 
@@ -45,6 +47,80 @@ public:
     rclcpp::init(0, nullptr);
   }
 };
+
+namespace
+{
+
+size_t count_reentrant_groups(
+  const performance_test::PerformanceNodeBase::SharedPtr & node)
+{
+  size_t count = 0;
+  node->get_node_base()->for_each_callback_group(
+    [&count](rclcpp::CallbackGroup::SharedPtr group) {
+      if (group->type() == rclcpp::CallbackGroupType::Reentrant) {
+        count++;
+      }
+    });
+  return count;
+}
+
+// Add one of every entity kind so the assertion covers subscription, timer
+// (via the periodic publisher), server and client placement.
+void add_all_entity_kinds(const performance_test::PerformanceNodeBase::SharedPtr & node)
+{
+  node->add_subscriber<performance_test_msgs::msg::Sample>(
+    "my_topic",
+    performance_test::msg_pass_by_t::PASS_BY_SHARED_PTR);
+  node->add_periodic_publisher<performance_test_msgs::msg::Sample>(
+    "my_topic",
+    std::chrono::milliseconds(10),
+    performance_test::msg_pass_by_t::PASS_BY_UNIQUE_PTR);
+  node->add_server<performance_test_msgs::srv::Sample>(
+    "my_service");
+  node->add_periodic_client<performance_test_msgs::srv::Sample>(
+    "my_service",
+    std::chrono::milliseconds(10));
+}
+
+}  // namespace
+
+// A node built with callback_group_type=reentrant owns exactly one Reentrant
+// group, shared by every entity it creates.
+TEST_F(TestNode, ReentrantCallbackGroupTest)
+{
+  rclcpp::NodeOptions node_options;
+  node_options.parameter_overrides(
+    {{"callback_group_type", std::string("reentrant")}});
+
+  auto node = std::make_shared<performance_test::PerformanceNode<rclcpp::Node>>(
+    "node_name", "", node_options);
+  add_all_entity_kinds(node);
+
+  EXPECT_EQ(1u, count_reentrant_groups(node));
+}
+
+// The default and the explicit mutually_exclusive setting both leave the node
+// with no Reentrant group (entities land in the node's default group).
+TEST_F(TestNode, DefaultCallbackGroupHasNoReentrantGroupTest)
+{
+  auto node = std::make_shared<performance_test::PerformanceNode<rclcpp::Node>>("node_name");
+  add_all_entity_kinds(node);
+
+  EXPECT_EQ(0u, count_reentrant_groups(node));
+}
+
+TEST_F(TestNode, MutuallyExclusiveCallbackGroupTest)
+{
+  rclcpp::NodeOptions node_options;
+  node_options.parameter_overrides(
+    {{"callback_group_type", std::string("mutually_exclusive")}});
+
+  auto node = std::make_shared<performance_test::PerformanceNode<rclcpp::Node>>(
+    "node_name", "", node_options);
+  add_all_entity_kinds(node);
+
+  EXPECT_EQ(0u, count_reentrant_groups(node));
+}
 
 TEST_F(TestNode, NodeConstructorTest)
 {

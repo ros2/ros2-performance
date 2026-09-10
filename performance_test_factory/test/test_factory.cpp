@@ -42,6 +42,64 @@ public:
   }
 };
 
+namespace
+{
+
+size_t count_reentrant_groups(
+  const performance_test::PerformanceNodeBase::SharedPtr & node)
+{
+  size_t count = 0;
+  node->get_node_base()->for_each_callback_group(
+    [&count](rclcpp::CallbackGroup::SharedPtr group) {
+      if (group->type() == rclcpp::CallbackGroupType::Reentrant) {
+        count++;
+      }
+    });
+  return count;
+}
+
+std::string test_architecture_json_path()
+{
+  std::string this_file_path = __FILE__;
+  std::string this_dir_path = this_file_path.substr(0, this_file_path.rfind("/"));
+  return this_dir_path + std::string("/files/test_architecture.json");
+}
+
+}  // namespace
+
+// A factory built with callback_group_type=reentrant must propagate it to every
+// node it creates from a topology, giving each exactly one Reentrant group.
+TEST_F(TestFactory, ReentrantCallbackGroupPassThroughTest)
+{
+  performance_test_factory::TemplateFactory factory(
+    true, true, false, "",
+    performance_test_factory::NodeType::RCLCPP_NODE, "reentrant");
+
+  auto nodes_vec = factory.parse_topology_from_json(
+    test_architecture_json_path(),
+    performance_metrics::Tracker::Options());
+
+  ASSERT_FALSE(nodes_vec.empty());
+  for (const auto & node : nodes_vec) {
+    EXPECT_EQ(1u, count_reentrant_groups(node));
+  }
+}
+
+// The default factory leaves every node without a Reentrant group.
+TEST_F(TestFactory, DefaultFactoryNoReentrantGroupTest)
+{
+  performance_test_factory::TemplateFactory factory;
+
+  auto nodes_vec = factory.parse_topology_from_json(
+    test_architecture_json_path(),
+    performance_metrics::Tracker::Options());
+
+  ASSERT_FALSE(nodes_vec.empty());
+  for (const auto & node : nodes_vec) {
+    EXPECT_EQ(0u, count_reentrant_groups(node));
+  }
+}
+
 TEST_F(TestFactory, FactoryConstructorTest)
 {
   performance_test_factory::TemplateFactory factory;

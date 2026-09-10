@@ -57,9 +57,21 @@ PerformanceNodeBase::PerformanceNodeBase(const NodeInterfaces & node_interfaces)
     "executor_id", rclcpp::ParameterValue(0)
     ).get<int>();
 
+  // A reentrant group lets this node's callbacks run concurrently on executors
+  // that honor it. Leaving m_callback_group null keeps the node default.
+  const auto callback_group_type =
+    m_node_interfaces.parameters->declare_parameter(
+    "callback_group_type", rclcpp::ParameterValue(std::string("mutually_exclusive"))
+    ).get<std::string>();
+  if (callback_group_type == "reentrant") {
+    m_callback_group =
+      m_node_interfaces.base->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
+  }
+
   RCLCPP_INFO(
     this->get_node_logger(),
-    "PerformanceNode %s created with executor id %d", this->get_node_name(), m_executor_id);
+    "PerformanceNode %s created with executor id %d and %s callback group",
+    this->get_node_name(), m_executor_id, callback_group_type.c_str());
 }
 
 rclcpp::node_interfaces::NodeBaseInterface::SharedPtr
@@ -93,7 +105,7 @@ void PerformanceNodeBase::add_timer(
   rclcpp::TimerBase::SharedPtr timer = rclcpp::create_wall_timer(
     period,
     callback,
-    nullptr,
+    m_callback_group,
     m_node_interfaces.base.get(),
     m_node_interfaces.timers.get());
 

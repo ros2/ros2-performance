@@ -311,6 +311,11 @@ protected:
 
   std::vector<rclcpp::TimerBase::SharedPtr> m_timers;
 
+  // Callback group shared by every entity this node creates. Null when the node
+  // uses the rclcpp default (the node's own mutually-exclusive group), so
+  // passing it straight through preserves the pre-existing behavior.
+  rclcpp::CallbackGroup::SharedPtr m_callback_group;
+
   std::shared_ptr<performance_metrics::EventsLogger> m_events_logger;
 
   int m_executor_id = 0;

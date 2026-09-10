@@ -52,6 +52,9 @@ public:
   // Number of threads for thread-pool executors (MultiThreadedExecutor,
   // EventsCBGExecutor). 0 means hardware_concurrency.
   int num_threads;
+  // Callback group type for every entity a node creates: "mutually_exclusive"
+  // (the rclcpp default) or "reentrant".
+  std::string callback_group_type;
   int node;
   int duration_sec;
   int resources_sampling_per_ms;
