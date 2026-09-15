@@ -141,7 +141,20 @@ public:
     const std::string & action_name,
     const rclcpp::QoS & qos_profile = rclcpp::ServicesQoS());
 
-  void add_timer(std::chrono::microseconds period, std::function<void()> callback);
+  void add_timer(
+    std::chrono::microseconds period,
+    std::function<void()> callback,
+    rclcpp::CallbackGroup::SharedPtr callback_group = nullptr);
+
+  // Assign a named callback group to the entity (topic / service) identified by
+  // entity_name. Must be called before the entity is created. An empty
+  // group_name leaves the entity on the node default group.
+  void set_callback_group(const std::string & entity_name, const std::string & group_name);
+
+  // Resolve the callback group for an entity: its named group (created lazily on
+  // first use, as the node's callback_group_type) if one was registered,
+  // otherwise the node default group.
+  rclcpp::CallbackGroup::SharedPtr resolve_callback_group(const std::string & entity_name);
 
   std::vector<const performance_metrics::Tracker *> sub_trackers_ptr();
   std::vector<performance_metrics::Tracker> sub_trackers();
@@ -315,6 +328,12 @@ protected:
   // uses the rclcpp default (the node's own mutually-exclusive group), so
   // passing it straight through preserves the pre-existing behavior.
   rclcpp::CallbackGroup::SharedPtr m_callback_group;
+
+  // Per-entity named callback groups (JSON "callback_group"). Created lazily;
+  // m_named_group_type follows the node's callback_group_type.
+  rclcpp::CallbackGroupType m_named_group_type = rclcpp::CallbackGroupType::MutuallyExclusive;
+  std::map<std::string, std::string> m_entity_group_names;
+  std::map<std::string, rclcpp::CallbackGroup::SharedPtr> m_named_callback_groups;
 
   std::shared_ptr<performance_metrics::EventsLogger> m_events_logger;
 
