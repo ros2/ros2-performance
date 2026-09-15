@@ -343,7 +343,7 @@ void PerformanceNodeBase::handle_sub_received_msg(
 
   RCLCPP_DEBUG(
     this->get_node_logger(),
-    "Received on %s msg number %d after %lu us",
+    "Received on %s msg number %d after %lu ns",
     topic_name.c_str(),
     msg_header.tracking_number,
     tracker.last());
@@ -364,7 +364,7 @@ void PerformanceNodeBase::handle_client_received_response(
 
   RCLCPP_DEBUG(
     this->get_node_logger(),
-    "Response on %s request number %d received after %lu us",
+    "Response on %s request number %d received after %lu ns",
     service_name.c_str(),
     request_header.tracking_number,
     tracker.last());
@@ -387,7 +387,7 @@ PerformanceNodeBase::handle_server_received_request(
   tracker.scan(request_header, response_header.stamp, m_events_logger);
   RCLCPP_DEBUG(
     this->get_node_logger(),
-    "Request on %s request number %d received %lu us",
+    "Request on %s request number %d received %lu ns",
     service_name.c_str(),
     request_header.tracking_number,
     tracker.last());

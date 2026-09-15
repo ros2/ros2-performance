@@ -43,14 +43,19 @@ void Tracker::scan(
   // Compute latency
   rclcpp::Time stamp(header.stamp.sec, header.stamp.nanosec, RCL_ROS_TIME);
   auto lat = std::chrono::nanoseconds((now - stamp).nanoseconds());
-  uint64_t lat_us = lat.count() / 1000;
+  // Latency is stored in nanoseconds to preserve sub-microsecond resolution
+  // (intra-process delivery is often < 1 us; truncating to integer us reported 0).
+  // The summary columns divide by 1000 and report fractional microseconds.
+  uint64_t lat_ns = static_cast<uint64_t>(lat.count());
+  // Kept in microseconds for the late/too-late thresholds and event text below.
+  uint64_t lat_us = lat_ns / 1000;
 
   if (lat.count() < 0) {
     std::cout << "Negative latency detected: " << lat.count() << " nanoseconds" << std::endl;
   }
 
-  // store the last latency to be read from node
-  m_last_latency = lat_us;
+  // store the last latency (nanoseconds) to be read from node
+  m_last_latency = lat_ns;
 
   bool late = false;
   bool too_late = false;
@@ -141,8 +146,8 @@ void Tracker::scan(
     }
   }
 
-  // Compute statistics with new sample
-  this->add_sample(now, lat_us, header.size, header.frequency);
+  // Compute statistics with new sample (nanoseconds)
+  this->add_sample(now, lat_ns, header.size, header.frequency);
 
   m_received_messages++;
   m_delta_received_messages++;

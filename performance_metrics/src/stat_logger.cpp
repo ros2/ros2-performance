@@ -51,10 +51,11 @@ namespace performance_metrics
  */
 static std::string dequeToString(const std::deque<uint64_t> & dq)
 {
+  // Samples are stored in ns; the all_lat column is reported in microseconds.
   std::ostringstream oss;
   oss << "[";
   for (size_t i = 0; i < dq.size(); ++i) {
-    oss << dq[i];
+    oss << dq[i] / 1000;
     if (i < dq.size() - 1) {
       oss << "; ";
     }
@@ -165,10 +166,11 @@ void log_trackers_latency_all_stats(
       stream_out(csv_out, stream, tracker.late(), narrow_space);
       stream_out(csv_out, stream, tracker.too_late(), wide_space);
       stream_out(csv_out, stream, tracker.lost(), narrow_space);
-      stream_out(csv_out, stream, std::round(tracker.stat().mean()), narrow_space);
-      stream_out(csv_out, stream, std::round(tracker.stat().stddev()), narrow_space);
-      stream_out(csv_out, stream, std::round(tracker.stat().min()), narrow_space);
-      stream_out(csv_out, stream, std::round(tracker.stat().max()), narrow_space);
+      // Samples are stored in ns; report fractional microseconds.
+      stream_out(csv_out, stream, tracker.stat().mean() / 1000.0, narrow_space);
+      stream_out(csv_out, stream, tracker.stat().stddev() / 1000.0, narrow_space);
+      stream_out(csv_out, stream, tracker.stat().min() / 1000.0, narrow_space);
+      stream_out(csv_out, stream, tracker.stat().max() / 1000.0, narrow_space);
       stream_out(csv_out, stream, tracker.frequency(), narrow_space);
       stream_out(csv_out, stream, (tracker.throughput() / 1024), extended_space);
       stream_out(csv_out, stream, dequeToString(tracker.get_all_latency()), narrow_space, false);
@@ -322,7 +324,8 @@ void log_trackers_latency_total_stats(
     total_latency += tracker.received() * tracker.stat().mean();
   }
 
-  double average_latency = std::round(total_latency / total_received);
+  // total_latency is accumulated in ns; report fractional microseconds.
+  double average_latency = total_latency / total_received / 1000.0;
 
   log_total_stats(
     total_received, total_lost, total_late, total_too_late,
@@ -343,7 +346,8 @@ uint64_t get_trackers_avg_latency(const std::vector<const Tracker *> & trackers)
   }
 
   if (total_received) {
-    return std::round(total_latency / total_received);
+    // delta_stat holds ns; the resources latency_us column stays in microseconds.
+    return std::round(total_latency / total_received / 1000.0);
   } else {
     return 0;
   }
