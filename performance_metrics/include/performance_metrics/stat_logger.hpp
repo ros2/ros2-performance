@@ -60,13 +60,14 @@ void log_trackers_latency_total_stats(
 
 // Reconciles, per topic, how many messages the publisher(s) actually sent
 // against how many the subscriber(s) received.
-// Also catches trailing losses (messages the publisher never emitted, 
+// Also catches trailing losses (messages the publisher never emitted,
 // or that were dropped after the last received sequence number)
 void log_trackers_sent_vs_received(
   std::ostream & stream,
   const std::vector<Tracker> & pub_trackers,
   const std::vector<Tracker> & sub_trackers,
-  const bool csv_out = false);
+  const bool csv_out = false,
+  double duration_sec = 0.0);
 
 uint64_t get_trackers_avg_latency(
   const std::vector<const Tracker *> & trackers);
