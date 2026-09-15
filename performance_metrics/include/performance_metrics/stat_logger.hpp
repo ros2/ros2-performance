@@ -58,6 +58,17 @@ void log_trackers_latency_total_stats(
   const std::vector<Tracker> & trackers,
   const bool csv_out = false);
 
+// Reconciles, per topic, how many messages the publisher(s) actually sent
+// against how many the subscriber(s) received. Unlike the sequence-gap "lost"
+// counter, true_lost = sent - received also catches trailing losses (messages
+// the publisher never emitted, or that were dropped after the last received
+// sequence number), which the gap counter is structurally blind to.
+void log_trackers_sent_vs_received(
+  std::ostream & stream,
+  const std::vector<Tracker> & pub_trackers,
+  const std::vector<Tracker> & sub_trackers,
+  const bool csv_out = false);
+
 uint64_t get_trackers_avg_latency(
   const std::vector<const Tracker *> & trackers);
 
