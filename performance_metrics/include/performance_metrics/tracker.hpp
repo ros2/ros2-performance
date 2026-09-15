@@ -84,6 +84,10 @@ public:
 
   uint64_t lost() const {return m_lost_messages;}
 
+  // Out-of-order or duplicate messages seen (tracking number went backwards).
+  // Kept separate so it cannot corrupt the lost counter.
+  uint64_t reordered() const {return m_reordered_messages;}
+
   uint64_t late() const {return m_late_messages;}
 
   uint64_t too_late() const {return m_too_late_messages;}
@@ -140,6 +144,7 @@ private:
   mutable uint64_t m_delta_received_messages = 0;
   uint64_t m_last_latency = 0;
   uint64_t m_lost_messages = 0;
+  uint64_t m_reordered_messages = 0;
   uint64_t m_received_messages = 0;
   uint64_t m_late_messages = 0;
   uint64_t m_too_late_messages = 0;

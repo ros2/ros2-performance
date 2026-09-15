@@ -43,14 +43,15 @@ void Tracker::scan(
   // Compute latency
   rclcpp::Time stamp(header.stamp.sec, header.stamp.nanosec, RCL_ROS_TIME);
   auto lat = std::chrono::nanoseconds((now - stamp).nanoseconds());
-  uint64_t lat_us = lat.count() / 1000;
+  uint64_t lat_ns = static_cast<uint64_t>(lat.count());
+  // Microseconds only for the late/too-late thresholds and event text below.
+  uint64_t lat_us = lat_ns / 1000;
 
   if (lat.count() < 0) {
     std::cout << "Negative latency detected: " << lat.count() << " nanoseconds" << std::endl;
   }
 
-  // store the last latency to be read from node
-  m_last_latency = lat_us;
+  m_last_latency = lat_ns;
 
   bool late = false;
   bool too_late = false;
@@ -61,26 +62,34 @@ void Tracker::scan(
     if (header.tracking_number == m_tracking_number_count) {
       m_tracking_number_count++;
     } else {
-      // We missed some mesages...
-      int64_t n_lost = header.tracking_number - m_tracking_number_count;
-      m_lost_messages += n_lost;
-      m_tracking_number_count = header.tracking_number + 1;
+      // Signed so out-of-order/duplicate delivery cannot wrap into the lost count.
+      int64_t n_lost =
+        static_cast<int64_t>(header.tracking_number) -
+        static_cast<int64_t>(m_tracking_number_count);
 
-      // Log the event
-      if (elog != nullptr) {
-        EventsLogger::Event ev;
-        std::stringstream description;
-        ev.caller_name = m_topic_srv_name + "->" + m_node_name;
-        ev.code = EventsLogger::EventCode::lost_messages;
+      if (n_lost < 0) {
+        m_reordered_messages++;
+      } else {
+        // We missed some messages...
+        m_lost_messages += n_lost;
+        m_tracking_number_count = header.tracking_number + 1;
 
-        if (n_lost == 1) {
-          description << "msg " << header.tracking_number - 1 << " lost.";
-        } else {
-          int64_t span_lost = header.tracking_number - 1 + n_lost;
-          description << "msgs " << header.tracking_number - 1 << " to " << span_lost << " lost.";
+        // Log the event
+        if (elog != nullptr) {
+          EventsLogger::Event ev;
+          std::stringstream description;
+          ev.caller_name = m_topic_srv_name + "->" + m_node_name;
+          ev.code = EventsLogger::EventCode::lost_messages;
+
+          if (n_lost == 1) {
+            description << "msg " << header.tracking_number - 1 << " lost.";
+          } else {
+            int64_t span_lost = header.tracking_number - 1 + n_lost;
+            description << "msgs " << header.tracking_number - 1 << " to " << span_lost << " lost.";
+          }
+          ev.description = description.str();
+          elog->write_event(ev);
         }
-        ev.description = description.str();
-        elog->write_event(ev);
       }
     }
 
@@ -131,8 +140,7 @@ void Tracker::scan(
     }
   }
 
-  // Compute statistics with new sample
-  this->add_sample(now, lat_us, header.size, header.frequency);
+  this->add_sample(now, lat_ns, header.size, header.frequency);
 
   m_received_messages++;
   m_delta_received_messages++;
