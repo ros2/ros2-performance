@@ -328,7 +328,8 @@ void System::log_latency_all_stats(
     stream,
     publishers,
     subs,
-    m_csv_out);
+    m_csv_out,
+    static_cast<double>(m_experiment_duration.count()));
 }
 
 void System::log_latency_total_stats(

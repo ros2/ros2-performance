@@ -67,7 +67,8 @@ void log_trackers_sent_vs_received(
   std::ostream & stream,
   const std::vector<Tracker> & pub_trackers,
   const std::vector<Tracker> & sub_trackers,
-  const bool csv_out = false);
+  const bool csv_out = false,
+  double duration_sec = 0.0);
 
 uint64_t get_trackers_avg_latency(
   const std::vector<const Tracker *> & trackers);
