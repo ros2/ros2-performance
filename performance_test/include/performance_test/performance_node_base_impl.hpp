@@ -105,7 +105,7 @@ void PerformanceNodeBase::add_subscriber_by_msg_variant(
     std::placeholders::_1);
 
   rclcpp::SubscriptionOptions subscription_options;
-  subscription_options.callback_group = m_callback_group;
+  subscription_options.callback_group = resolve_callback_group(topic_name);
 
   rclcpp::SubscriptionBase::SharedPtr sub = rclcpp::create_subscription<Msg>(
     m_node_interfaces.parameters,
@@ -136,7 +136,7 @@ void PerformanceNodeBase::add_periodic_publisher(
     size,
     period);
 
-  this->add_timer(period, publisher_task);
+  this->add_timer(period, publisher_task, resolve_callback_group(topic_name));
 }
 
 template<typename Msg>

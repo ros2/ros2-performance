@@ -67,6 +67,9 @@ PerformanceNodeBase::PerformanceNodeBase(const NodeInterfaces & node_interfaces)
     m_callback_group =
       m_node_interfaces.base->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
   }
+  m_named_group_type = (callback_group_type == "reentrant") ?
+    rclcpp::CallbackGroupType::Reentrant :
+    rclcpp::CallbackGroupType::MutuallyExclusive;
 
   RCLCPP_INFO(
     this->get_node_logger(),
@@ -100,16 +103,39 @@ PerformanceNodeBase::get_node_name()
 
 void PerformanceNodeBase::add_timer(
   std::chrono::microseconds period,
-  std::function<void()> callback)
+  std::function<void()> callback,
+  rclcpp::CallbackGroup::SharedPtr callback_group)
 {
   rclcpp::TimerBase::SharedPtr timer = rclcpp::create_wall_timer(
     period,
     callback,
-    m_callback_group,
+    callback_group ? callback_group : m_callback_group,
     m_node_interfaces.base.get(),
     m_node_interfaces.timers.get());
 
   m_timers.push_back(timer);
+}
+
+void PerformanceNodeBase::set_callback_group(
+  const std::string & entity_name, const std::string & group_name)
+{
+  if (!group_name.empty()) {
+    m_entity_group_names[entity_name] = group_name;
+  }
+}
+
+rclcpp::CallbackGroup::SharedPtr
+PerformanceNodeBase::resolve_callback_group(const std::string & entity_name)
+{
+  auto name_it = m_entity_group_names.find(entity_name);
+  if (name_it == m_entity_group_names.end()) {
+    return m_callback_group;
+  }
+  auto & group = m_named_callback_groups[name_it->second];
+  if (!group) {
+    group = m_node_interfaces.base->create_callback_group(m_named_group_type);
+  }
+  return group;
 }
 
 std::vector<performance_metrics::Tracker>
