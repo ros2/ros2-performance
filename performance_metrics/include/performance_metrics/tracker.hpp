@@ -90,6 +90,8 @@ public:
 
   uint64_t received() const {return m_received_messages;}
 
+  uint64_t sent() const {return m_stat.n();}
+
   size_t size() const {return m_data_size;}
 
   float frequency() const {return m_frequency;}
