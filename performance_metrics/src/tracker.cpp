@@ -43,14 +43,15 @@ void Tracker::scan(
   // Compute latency
   rclcpp::Time stamp(header.stamp.sec, header.stamp.nanosec, RCL_ROS_TIME);
   auto lat = std::chrono::nanoseconds((now - stamp).nanoseconds());
-  uint64_t lat_us = lat.count() / 1000;
+  uint64_t lat_ns = static_cast<uint64_t>(lat.count());
+  // Microseconds only for the late/too-late thresholds and event text below.
+  uint64_t lat_us = lat_ns / 1000;
 
   if (lat.count() < 0) {
     std::cout << "Negative latency detected: " << lat.count() << " nanoseconds" << std::endl;
   }
 
-  // store the last latency to be read from node
-  m_last_latency = lat_us;
+  m_last_latency = lat_ns;
 
   bool late = false;
   bool too_late = false;
@@ -61,14 +62,12 @@ void Tracker::scan(
     if (header.tracking_number == m_tracking_number_count) {
       m_tracking_number_count++;
     } else {
-      // Compute the gap as a signed quantity.
+      // Signed so out-of-order/duplicate delivery cannot wrap into the lost count.
       int64_t n_lost =
         static_cast<int64_t>(header.tracking_number) -
         static_cast<int64_t>(m_tracking_number_count);
 
       if (n_lost < 0) {
-        // Out-of-order or duplicate delivery. Do not corrupt the lost counter
-        // and do not move the expected counter backwards.
         m_reordered_messages++;
       } else {
         // We missed some messages...
@@ -141,8 +140,7 @@ void Tracker::scan(
     }
   }
 
-  // Compute statistics with new sample
-  this->add_sample(now, lat_us, header.size, header.frequency);
+  this->add_sample(now, lat_ns, header.size, header.frequency);
 
   m_received_messages++;
   m_delta_received_messages++;
