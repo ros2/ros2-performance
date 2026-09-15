@@ -216,6 +216,7 @@ int main(int argc, char ** argv)
   std::cout << std::endl;
   ros2_system->save_latency_all_stats(result_dir_name);
   ros2_system->save_latency_total_stats(latency_total_output_path);
+  ros2_system->save_cpu_by_executor(result_dir_name);
 
   // Only the parent process aggregates the per-process results
   bool is_parent = performance_test::is_parent_process(
