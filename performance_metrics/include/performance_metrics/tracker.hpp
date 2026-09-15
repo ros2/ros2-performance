@@ -130,6 +130,8 @@ public:
 
   uint32_t get_and_update_tracking_number();
 
+  uint64_t sent() const {return stat().n();}
+
 private:
   uint32_t m_tracking_number_count = 0;
 };
