@@ -37,6 +37,7 @@
 #include <map>
 #include <memory>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
@@ -243,8 +244,12 @@ std::unique_ptr<std::thread> System::create_spin_thread(
   std::unique_ptr<std::thread> thread;
 
   // Name the thread from inside, before spin() spawns any worker threads, so the
-  // workers reliably inherit the name. Truncated to the 15-char pthread limit.
-  const std::string tname = name.substr(0, 15);
+  // workers reliably inherit the name.
+  if (name.size() > 15) {
+    throw std::invalid_argument(
+      "thread name '" + name + "' exceeds the 15-character pthread limit");
+  }
+  const std::string tname = name;
 
   switch (m_spin_type) {
     case SpinType::SPIN:
