@@ -201,11 +201,15 @@ void System::spin(std::chrono::seconds duration, bool wait_for_discovery)
 
   RCLCPP_INFO(rclcpp::get_logger("ros2-performance"), "Starting to spin");
   for (const auto & pair : m_executors_map) {
-    auto & name = pair.second.name;
     auto & executor = pair.second.executor;
 
+    std::string thread_name = pair.second.name;
+    if (thread_name.size() > 15) {
+      thread_name = "exec" + std::to_string(pair.first);
+    }
+
     // Spin each executor in a separate thread (named after the executor).
-    auto thread = create_spin_thread(executor, name);
+    auto thread = create_spin_thread(executor, thread_name);
 
     m_threads.push_back(std::move(thread));
   }
