@@ -26,12 +26,18 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+#include <dirent.h>
 #include <pthread.h>
+#include <unistd.h>
 
 #include <algorithm>
+#include <cstdint>
+#include <cstdlib>
 #include <fstream>
 #include <map>
 #include <memory>
+#include <sstream>
+#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
@@ -68,6 +74,52 @@ static uint64_t parse_line(std::string & line, const bool csv_out)
   line = split_right.substr(non_sep_pos, split_right.length());
 
   return strtoul(split_left.c_str(), NULL, 0);
+}
+
+// Sum utime+stime (clock ticks) over all threads of this process, grouped by
+// thread name (comm). Threads spawned by an executor inherit its name, so the
+// per-comm sum is that executor's CPU time.
+static std::map<std::string, uint64_t> sample_thread_cpu_ticks()
+{
+  std::map<std::string, uint64_t> by_comm;
+  DIR * dir = opendir("/proc/self/task");
+  if (dir == nullptr) {
+    return by_comm;
+  }
+  struct dirent * ent;
+  while ((ent = readdir(dir)) != nullptr) {
+    if (ent->d_name[0] == '.') {
+      continue;
+    }
+    std::ifstream f(std::string("/proc/self/task/") + ent->d_name + "/stat");
+    std::string line;
+    if (!std::getline(f, line)) {
+      continue;
+    }
+    // Format: "pid (comm) state ...". comm may contain spaces/parens, so key
+    // off the last ')'. After it, utime is field 12 and stime field 13.
+    size_t open_paren = line.find('(');
+    size_t close_paren = line.rfind(')');
+    if (open_paren == std::string::npos || close_paren == std::string::npos ||
+      close_paren < open_paren)
+    {
+      continue;
+    }
+    std::string comm = line.substr(open_paren + 1, close_paren - open_paren - 1);
+    std::istringstream rest(line.substr(close_paren + 1));
+    std::vector<std::string> tok;
+    std::string t;
+    while (rest >> t) {
+      tok.push_back(t);
+    }
+    if (tok.size() < 13) {
+      continue;
+    }
+    by_comm[comm] += std::strtoull(tok[11].c_str(), nullptr, 10) +
+      std::strtoull(tok[12].c_str(), nullptr, 10);
+  }
+  closedir(dir);
+  return by_comm;
 }
 
 System::System(
@@ -149,19 +201,35 @@ void System::spin(std::chrono::seconds duration, bool wait_for_discovery)
 
   RCLCPP_INFO(rclcpp::get_logger("ros2-performance"), "Starting to spin");
   for (const auto & pair : m_executors_map) {
-    auto & name = pair.second.name;
     auto & executor = pair.second.executor;
 
-    // Spin each executor in a separate thread
-    auto thread = create_spin_thread(executor);
+    std::string thread_name = pair.second.name;
+    if (thread_name.size() > 15) {
+      thread_name = "exec" + std::to_string(pair.first);
+    }
 
-    pthread_setname_np(thread->native_handle(), name.c_str());
+    // Spin each executor in a separate thread (named after the executor).
+    auto thread = create_spin_thread(executor, thread_name);
 
     m_threads.push_back(std::move(thread));
   }
 
-  // let the nodes spin for the specified amount of time
+  // Snapshot per-thread CPU, run the experiment, snapshot again. Executor worker
+  // threads inherit the executor's name, so grouping by comm attributes CPU to
+  // each executor (e.g. publisher node vs subscriber node).
+  auto cpu_before = sample_thread_cpu_ticks();
   performance_test::sleep_task(m_experiment_duration);
+  auto cpu_after = sample_thread_cpu_ticks();
+
+  const double clk = static_cast<double>(sysconf(_SC_CLK_TCK));
+  m_cpu_window_seconds = static_cast<double>(m_experiment_duration.count());
+  for (const auto & entry : cpu_after) {
+    auto it = cpu_before.find(entry.first);
+    uint64_t before = (it != cpu_before.end()) ? it->second : 0;
+    if (entry.second >= before && clk > 0) {
+      m_thread_cpu_seconds[entry.first] = (entry.second - before) / clk;
+    }
+  }
   // If spin type is waiting on a promise, fulfill the promise
   if (m_spin_type == SpinType::SPIN_FUTURE_COMPLETE) {
     m_promise.set_value();
@@ -174,20 +242,31 @@ void System::spin(std::chrono::seconds duration, bool wait_for_discovery)
   }
 }
 
-std::unique_ptr<std::thread> System::create_spin_thread(rclcpp::Executor::SharedPtr executor)
+std::unique_ptr<std::thread> System::create_spin_thread(
+  rclcpp::Executor::SharedPtr executor, const std::string & name)
 {
   std::unique_ptr<std::thread> thread;
+
+  // Name the thread from inside, before spin() spawns any worker threads, so the
+  // workers reliably inherit the name.
+  if (name.size() > 15) {
+    throw std::invalid_argument(
+      "thread name '" + name + "' exceeds the 15-character pthread limit");
+  }
+  const std::string tname = name;
 
   switch (m_spin_type) {
     case SpinType::SPIN:
       thread = std::make_unique<std::thread>(
-        [executor]() {
+        [executor, tname]() {
+          pthread_setname_np(pthread_self(), tname.c_str());
           executor->spin();
         });
       break;
     case SpinType::SPIN_SOME:
       thread = std::make_unique<std::thread>(
-        [executor]() {
+        [executor, tname]() {
+          pthread_setname_np(pthread_self(), tname.c_str());
           while (rclcpp::ok()) {
             executor->spin_some();
           }
@@ -195,13 +274,33 @@ std::unique_ptr<std::thread> System::create_spin_thread(rclcpp::Executor::Shared
       break;
     case SpinType::SPIN_FUTURE_COMPLETE:
       thread = std::make_unique<std::thread>(
-        [executor, this]() {
+        [executor, tname, this]() {
+          pthread_setname_np(pthread_self(), tname.c_str());
           executor->spin_until_future_complete(m_promise.get_future());
         });
       break;
   }
 
   return thread;
+}
+
+void System::save_cpu_by_executor(const std::string & results_folder) const
+{
+  if (results_folder.empty()) {
+    return;
+  }
+  std::ofstream out_file(results_folder + "/cpu_by_executor.txt");
+  if (!out_file.is_open()) {
+    return;
+  }
+  const std::string sep = m_csv_out ? "," : "  ";
+  out_file << "thread_name" << sep << "cpu_seconds" << sep <<
+    "cpu_percent_of_core" << std::endl;
+  for (const auto & entry : m_thread_cpu_seconds) {
+    double pct = (m_cpu_window_seconds > 0.0) ?
+      (100.0 * entry.second / m_cpu_window_seconds) : 0.0;
+    out_file << entry.first << sep << entry.second << sep << pct << std::endl;
+  }
 }
 
 void System::save_latency_all_stats(
