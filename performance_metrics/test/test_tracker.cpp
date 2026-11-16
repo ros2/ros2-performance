@@ -147,3 +147,46 @@ TEST(TrackerTest, TrackingOptionsTest)
   ASSERT_EQ(2u, tracker.too_late());
   ASSERT_DOUBLE_EQ(26200.0, tracker.stat().mean());
 }
+
+TEST(TrackerTest, ThroughputTest)
+{
+  performance_metrics::Tracker tracker("", "", performance_metrics::Tracker::Options(false));
+
+  auto header = performance_test_msgs::msg::PerformanceHeader();
+  header.stamp = rclcpp::Time(0, 0, RCL_ROS_TIME);
+  header.size = 100;
+  header.frequency = 1;
+
+  ASSERT_DOUBLE_EQ(0.0, tracker.throughput());
+
+  tracker.scan(header, rclcpp::Time(1, 0, RCL_ROS_TIME), nullptr);
+  ASSERT_DOUBLE_EQ(0.0, tracker.throughput());
+
+  tracker.scan(header, rclcpp::Time(2, 0, RCL_ROS_TIME), nullptr);
+  ASSERT_DOUBLE_EQ(100.0, tracker.throughput());
+  ASSERT_EQ(100u, tracker.size());
+  ASSERT_FLOAT_EQ(1.0f, tracker.frequency());
+}
+
+TEST(TrackerTest, DeltaTest)
+{
+  performance_metrics::Tracker tracker("", "", performance_metrics::Tracker::Options(false));
+
+  auto header = performance_test_msgs::msg::PerformanceHeader();
+  header.stamp = rclcpp::Time(0, 0, RCL_ROS_TIME);
+
+  tracker.scan(header, rclcpp::Time(0, 1000, RCL_ROS_TIME), nullptr);
+  tracker.scan(header, rclcpp::Time(0, 3000, RCL_ROS_TIME), nullptr);
+
+  ASSERT_EQ(2u, tracker.delta_received());
+  ASSERT_EQ(2u, tracker.delta_stat().n());
+  ASSERT_DOUBLE_EQ(tracker.stat().mean(), tracker.delta_stat().mean());
+
+  tracker.reset_delta_received();
+  tracker.reset_delta_stat();
+
+  ASSERT_EQ(0u, tracker.delta_received());
+  ASSERT_EQ(0u, tracker.delta_stat().n());
+  ASSERT_EQ(2u, tracker.received());
+  ASSERT_EQ(2u, tracker.stat().n());
+}
