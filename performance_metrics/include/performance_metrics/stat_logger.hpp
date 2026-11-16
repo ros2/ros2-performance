@@ -49,17 +49,23 @@ void log_total_stats(
 
 void log_trackers_latency_all_stats(
   std::ostream & stream,
-  const std::vector<Tracker> & trackers,
+  const std::vector<SubTracker> & trackers,
+  const bool csv_out = false,
+  const std::string & title = "");
+
+void log_trackers_latency_all_stats(
+  std::ostream & stream,
+  const std::vector<PubTracker> & trackers,
   const bool csv_out = false,
   const std::string & title = "");
 
 void log_trackers_latency_total_stats(
   std::ostream & stream,
-  const std::vector<Tracker> & trackers,
+  const std::vector<SubTracker> & trackers,
   const bool csv_out = false);
 
 uint64_t get_trackers_avg_latency(
-  const std::vector<const Tracker *> & trackers);
+  const std::vector<const SubTracker *> & trackers);
 
 template<typename T>
 void stream_out(

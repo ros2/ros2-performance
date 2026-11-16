@@ -254,7 +254,7 @@ void System::log_latency_all_stats(
   std::ostream & stream,
   bool include_services) const
 {
-  std::vector<performance_metrics::Tracker> subs;
+  std::vector<performance_metrics::SubTracker> subs;
 
   for (const auto & n : m_nodes) {
     auto trackers = n->sub_trackers();
@@ -268,10 +268,10 @@ void System::log_latency_all_stats(
     "Subscriptions stats:");
 
   if (include_services) {
-    std::vector<performance_metrics::Tracker> clients;
-    std::vector<performance_metrics::Tracker> services;
-    std::vector<performance_metrics::Tracker> action_clients;
-    std::vector<performance_metrics::Tracker> action_servers;
+    std::vector<performance_metrics::SubTracker> clients;
+    std::vector<performance_metrics::SubTracker> services;
+    std::vector<performance_metrics::SubTracker> action_clients;
+    std::vector<performance_metrics::SubTracker> action_servers;
 
     for (const auto & n : m_nodes) {
       auto service_trackers = n->service_trackers();
@@ -311,7 +311,7 @@ void System::log_latency_all_stats(
       "Action Servers stats:");
   }
 
-  std::vector<performance_metrics::Tracker> publishers;
+  std::vector<performance_metrics::PubTracker> publishers;
 
   for (const auto & n : m_nodes) {
     auto trackers = n->pub_trackers();
@@ -329,7 +329,7 @@ void System::log_latency_total_stats(
   std::ostream & stream,
   bool include_services) const
 {
-  std::vector<performance_metrics::Tracker> all_trackers;
+  std::vector<performance_metrics::SubTracker> all_trackers;
   for (const auto & n : m_nodes) {
     auto sub_trackers = n->sub_trackers();
     all_trackers.insert(all_trackers.end(), sub_trackers.begin(), sub_trackers.end());

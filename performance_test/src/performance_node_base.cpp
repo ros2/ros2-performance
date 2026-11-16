@@ -112,10 +112,10 @@ void PerformanceNodeBase::add_timer(
   m_timers.push_back(timer);
 }
 
-std::vector<performance_metrics::Tracker>
+std::vector<performance_metrics::SubTracker>
 PerformanceNodeBase::sub_trackers()
 {
-  std::vector<performance_metrics::Tracker> trackers;
+  std::vector<performance_metrics::SubTracker> trackers;
   for (const auto & sub : m_subs) {
     trackers.push_back(sub.second.second);
   }
@@ -123,10 +123,10 @@ PerformanceNodeBase::sub_trackers()
   return trackers;
 }
 
-std::vector<const performance_metrics::Tracker *>
+std::vector<const performance_metrics::SubTracker *>
 PerformanceNodeBase::sub_trackers_ptr()
 {
-  std::vector<const performance_metrics::Tracker *> trackers;
+  std::vector<const performance_metrics::SubTracker *> trackers;
   for (const auto & sub : m_subs) {
     trackers.push_back(&(sub.second.second));
   }
@@ -134,9 +134,9 @@ PerformanceNodeBase::sub_trackers_ptr()
   return trackers;
 }
 
-std::vector<performance_metrics::Tracker> PerformanceNodeBase::client_trackers()
+std::vector<performance_metrics::SubTracker> PerformanceNodeBase::client_trackers()
 {
-  std::vector<performance_metrics::Tracker> trackers;
+  std::vector<performance_metrics::SubTracker> trackers;
   for (const auto & client : m_clients) {
     trackers.push_back(std::get<1>(client.second));
   }
@@ -144,9 +144,9 @@ std::vector<performance_metrics::Tracker> PerformanceNodeBase::client_trackers()
   return trackers;
 }
 
-std::vector<performance_metrics::Tracker> PerformanceNodeBase::service_trackers()
+std::vector<performance_metrics::SubTracker> PerformanceNodeBase::service_trackers()
 {
-  std::vector<performance_metrics::Tracker> trackers;
+  std::vector<performance_metrics::SubTracker> trackers;
   for (const auto & service : m_servers) {
     trackers.push_back(std::get<1>(service.second));
   }
@@ -154,9 +154,9 @@ std::vector<performance_metrics::Tracker> PerformanceNodeBase::service_trackers(
   return trackers;
 }
 
-std::vector<performance_metrics::Tracker> PerformanceNodeBase::action_client_trackers()
+std::vector<performance_metrics::SubTracker> PerformanceNodeBase::action_client_trackers()
 {
-  std::vector<performance_metrics::Tracker> trackers;
+  std::vector<performance_metrics::SubTracker> trackers;
   for (const auto & client : m_action_clients) {
     trackers.push_back(std::get<1>(client.second));
   }
@@ -164,9 +164,9 @@ std::vector<performance_metrics::Tracker> PerformanceNodeBase::action_client_tra
   return trackers;
 }
 
-std::vector<performance_metrics::Tracker> PerformanceNodeBase::action_server_trackers()
+std::vector<performance_metrics::SubTracker> PerformanceNodeBase::action_server_trackers()
 {
-  std::vector<performance_metrics::Tracker> trackers;
+  std::vector<performance_metrics::SubTracker> trackers;
   for (const auto & client : m_action_servers) {
     trackers.push_back(std::get<1>(client.second));
   }
@@ -174,9 +174,9 @@ std::vector<performance_metrics::Tracker> PerformanceNodeBase::action_server_tra
   return trackers;
 }
 
-std::vector<performance_metrics::Tracker> PerformanceNodeBase::pub_trackers()
+std::vector<performance_metrics::PubTracker> PerformanceNodeBase::pub_trackers()
 {
-  std::vector<performance_metrics::Tracker> trackers;
+  std::vector<performance_metrics::PubTracker> trackers;
   for (const auto & pub : m_pubs) {
     trackers.push_back(pub.second.second);
   }
@@ -214,7 +214,7 @@ void PerformanceNodeBase::store_subscription(
   const std::string & topic_name,
   const performance_metrics::Tracker::Options & tracking_options)
 {
-  auto tracker = performance_metrics::Tracker(
+  auto tracker = performance_metrics::SubTracker(
     m_node_interfaces.base->get_name(),
     topic_name,
     tracking_options);
@@ -225,13 +225,11 @@ void PerformanceNodeBase::store_subscription(
 
 void PerformanceNodeBase::store_publisher(
   rclcpp::PublisherBase::SharedPtr pub,
-  const std::string & topic_name,
-  const performance_metrics::Tracker::Options & tracking_options)
+  const std::string & topic_name)
 {
-  auto tracker = performance_metrics::Tracker(
+  auto tracker = performance_metrics::PubTracker(
     m_node_interfaces.base->get_name(),
-    topic_name,
-    tracking_options);
+    topic_name);
 
   m_pubs.insert({topic_name, {pub, tracker}});
   RCLCPP_INFO(this->get_node_logger(), "Publisher to %s created", topic_name.c_str());
@@ -242,7 +240,7 @@ void PerformanceNodeBase::store_client(
   const std::string & service_name,
   const performance_metrics::Tracker::Options & tracking_options)
 {
-  auto tracker = performance_metrics::Tracker(
+  auto tracker = performance_metrics::SubTracker(
     m_node_interfaces.base->get_name(),
     service_name,
     tracking_options);
@@ -250,7 +248,7 @@ void PerformanceNodeBase::store_client(
   m_clients.insert(
     {
       service_name,
-      std::tuple<std::shared_ptr<rclcpp::ClientBase>, performance_metrics::Tracker, uint32_t>{
+      std::tuple<std::shared_ptr<rclcpp::ClientBase>, performance_metrics::SubTracker, uint32_t>{
         client,
         tracker,
         0
@@ -265,7 +263,7 @@ void PerformanceNodeBase::store_action_client(
   const std::string & action_name,
   const performance_metrics::Tracker::Options & tracking_options)
 {
-  auto tracker = performance_metrics::Tracker(
+  auto tracker = performance_metrics::SubTracker(
     m_node_interfaces.base->get_name(),
     action_name,
     tracking_options);
@@ -284,7 +282,7 @@ void PerformanceNodeBase::store_action_server(
   const std::string & action_name,
   const performance_metrics::Tracker::Options & tracking_options)
 {
-  auto tracker = performance_metrics::Tracker(
+  auto tracker = performance_metrics::SubTracker(
     m_node_interfaces.base->get_name(),
     action_name,
     tracking_options);
@@ -303,7 +301,7 @@ void PerformanceNodeBase::store_server(
   const std::string & service_name,
   const performance_metrics::Tracker::Options & tracking_options)
 {
-  auto tracker = performance_metrics::Tracker(
+  auto tracker = performance_metrics::SubTracker(
     m_node_interfaces.base->get_name(),
     service_name,
     tracking_options);

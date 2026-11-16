@@ -119,9 +119,32 @@ void log_total_stats(
   stream << std::endl;
 }
 
-void log_trackers_latency_all_stats(
+namespace
+{
+
+struct ReceiveCounters
+{
+  uint64_t received = 0;
+  uint64_t late = 0;
+  uint64_t too_late = 0;
+  uint64_t lost = 0;
+};
+
+ReceiveCounters receive_counters(const SubTracker & tracker)
+{
+  return {tracker.received(), tracker.late(), tracker.too_late(), tracker.lost()};
+}
+
+// Publishers receive nothing. The columns stay, as zeros, so the layout of the file is unchanged.
+ReceiveCounters receive_counters(const PubTracker &)
+{
+  return {};
+}
+
+template<typename TrackerT>
+void log_all_stats(
   std::ostream & stream,
-  const std::vector<Tracker> & trackers,
+  const std::vector<TrackerT> & trackers,
   const bool csv_out,
   const std::string & title)
 {
@@ -154,15 +177,16 @@ void log_trackers_latency_all_stats(
     };
 
   auto log_stats_line = [&stream, wide_space, narrow_space, separator, csv_out](
-    const Tracker & tracker)
+    const TrackerT & tracker)
     {
+      const auto counters = receive_counters(tracker);
       stream_out(csv_out, stream, tracker.get_node_name(), wide_space);
       stream_out(csv_out, stream, tracker.get_entity_name(), wide_space);
       stream_out(csv_out, stream, tracker.size(), narrow_space);
-      stream_out(csv_out, stream, tracker.received(), wide_space);
-      stream_out(csv_out, stream, tracker.late(), narrow_space);
-      stream_out(csv_out, stream, tracker.too_late(), wide_space);
-      stream_out(csv_out, stream, tracker.lost(), narrow_space);
+      stream_out(csv_out, stream, counters.received, wide_space);
+      stream_out(csv_out, stream, counters.late, narrow_space);
+      stream_out(csv_out, stream, counters.too_late, wide_space);
+      stream_out(csv_out, stream, counters.lost, narrow_space);
       stream_out(csv_out, stream, std::round(tracker.stat().mean()), narrow_space);
       stream_out(csv_out, stream, std::round(tracker.stat().stddev()), narrow_space);
       stream_out(csv_out, stream, std::round(tracker.stat().min()), narrow_space);
@@ -184,9 +208,29 @@ void log_trackers_latency_all_stats(
   }
 }
 
+}  // namespace
+
+void log_trackers_latency_all_stats(
+  std::ostream & stream,
+  const std::vector<SubTracker> & trackers,
+  const bool csv_out,
+  const std::string & title)
+{
+  log_all_stats(stream, trackers, csv_out, title);
+}
+
+void log_trackers_latency_all_stats(
+  std::ostream & stream,
+  const std::vector<PubTracker> & trackers,
+  const bool csv_out,
+  const std::string & title)
+{
+  log_all_stats(stream, trackers, csv_out, title);
+}
+
 void log_trackers_latency_total_stats(
   std::ostream & stream,
-  const std::vector<Tracker> & trackers,
+  const std::vector<SubTracker> & trackers,
   const bool csv_out)
 {
   uint64_t total_received = 0;
@@ -211,7 +255,7 @@ void log_trackers_latency_total_stats(
     average_latency, stream, csv_out);
 }
 
-uint64_t get_trackers_avg_latency(const std::vector<const Tracker *> & trackers)
+uint64_t get_trackers_avg_latency(const std::vector<const SubTracker *> & trackers)
 {
   uint64_t total_received = 0;
   double total_latency = 0;

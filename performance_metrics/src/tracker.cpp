@@ -35,7 +35,7 @@
 namespace performance_metrics
 {
 
-void Tracker::scan(
+void SubTracker::scan(
   const performance_test_msgs::msg::PerformanceHeader & header,
   const rclcpp::Time & now,
   std::shared_ptr<EventsLogger> elog)
@@ -136,6 +136,7 @@ void Tracker::scan(
 
   m_received_messages++;
   m_delta_received_messages++;
+  m_delta_stat.add_sample(lat_us);
 }
 
 void Tracker::add_sample(
@@ -153,12 +154,11 @@ void Tracker::add_sample(
 
   m_last_msg_time = now;
   m_stat.add_sample(latency_sample);
-  m_delta_stat.add_sample(latency_sample);
   // Add latency value to the deque
   m_all_latency.push_back(latency_sample);
 }
 
-uint32_t Tracker::get_and_update_tracking_number()
+uint32_t PubTracker::get_and_update_tracking_number()
 {
   uint32_t old_number = m_tracking_number_count;
   m_tracking_number_count++;
@@ -167,9 +167,7 @@ uint32_t Tracker::get_and_update_tracking_number()
 
 double Tracker::throughput() const
 {
-  // We compute max because currently publishers update only n() and not m_received_messages,
-  // but for subscriptions n() will not include messages received too late.
-  uint64_t num_msg_received = std::max(m_stat.n(), m_received_messages);
+  uint64_t num_msg_received = m_stat.n();
   if (num_msg_received < 2) {
     return 0.0;
   }
