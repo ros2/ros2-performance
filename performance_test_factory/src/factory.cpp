@@ -565,6 +565,10 @@ void TemplateFactory::add_periodic_publisher_from_json(
   std::string topic_name = pub_json["topic_name"];
   std::string msg_type = pub_json["msg_type"];
 
+  if (pub_json.find("callback_group") != pub_json.end()) {
+    node->set_callback_group(topic_name, pub_json["callback_group"]);
+  }
+
   float period_ms = 0;
 
   if (pub_json.find("freq_hz") != pub_json.end()) {
@@ -606,6 +610,10 @@ void TemplateFactory::add_subscriber_from_json(
 {
   std::string topic_name = sub_json["topic_name"];
   std::string msg_type = sub_json["msg_type"];
+
+  if (sub_json.find("callback_group") != sub_json.end()) {
+    node->set_callback_group(topic_name, sub_json["callback_group"]);
+  }
 
   rclcpp::QoS custom_qos_profile = get_qos_from_json(sub_json);
 
