@@ -110,7 +110,7 @@ private:
 
   std::chrono::seconds m_experiment_duration;
 
-  std::vector<const performance_metrics::Tracker *> m_all_subscription_trackers;
+  std::vector<const performance_metrics::SubTracker *> m_all_subscription_trackers;
   std::vector<std::shared_ptr<performance_test::PerformanceNodeBase>> m_nodes;
   std::map<int, NamedExecutor> m_executors_map;
   std::vector<std::unique_ptr<std::thread>> m_threads;

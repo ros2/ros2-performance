@@ -32,9 +32,9 @@
 #include "performance_metrics/tracker.hpp"
 #include "performance_test_msgs/msg/performance_header.hpp"
 
-TEST(TrackerTest, TrackerInitTest)
+TEST(SubTrackerTest, InitTest)
 {
-  performance_metrics::Tracker tracker("", "", performance_metrics::Tracker::Options());
+  performance_metrics::SubTracker tracker("", "", performance_metrics::Tracker::Options());
 
   ASSERT_EQ(0u, tracker.lost());
   ASSERT_EQ(0u, tracker.late());
@@ -50,10 +50,10 @@ TEST(TrackerTest, TrackerInitTest)
   ASSERT_EQ(0u, tracker.stat().n());
 }
 
-TEST(TrackerTest, TrackerScanTest)
+TEST(SubTrackerTest, ScanTest)
 {
   // tracker with disabled tracking options
-  performance_metrics::Tracker tracker("", "", performance_metrics::Tracker::Options(false));
+  performance_metrics::SubTracker tracker("", "", performance_metrics::Tracker::Options(false));
 
   auto header = performance_test_msgs::msg::PerformanceHeader();
   header.stamp = rclcpp::Time(0, 0, RCL_ROS_TIME);
@@ -90,7 +90,7 @@ TEST(TrackerTest, TrackerScanTest)
   ASSERT_EQ(3u, tracker.get_all_latency().size());
 }
 
-TEST(TrackerTest, TrackingOptionsTest)
+TEST(SubTrackerTest, TrackingOptionsTest)
 {
   performance_metrics::Tracker::Options t_options;
   t_options.late_percentage = 20;
@@ -98,7 +98,7 @@ TEST(TrackerTest, TrackingOptionsTest)
   t_options.too_late_percentage = 100;
   t_options.too_late_absolute_us = 50000;
 
-  performance_metrics::Tracker tracker("", "", t_options);
+  performance_metrics::SubTracker tracker("", "", t_options);
 
   auto header = performance_test_msgs::msg::PerformanceHeader();
   header.stamp = rclcpp::Time(0, 0, RCL_ROS_TIME);
@@ -148,9 +148,9 @@ TEST(TrackerTest, TrackingOptionsTest)
   ASSERT_DOUBLE_EQ(26200.0, tracker.stat().mean());
 }
 
-TEST(TrackerTest, ThroughputTest)
+TEST(SubTrackerTest, ThroughputTest)
 {
-  performance_metrics::Tracker tracker("", "", performance_metrics::Tracker::Options(false));
+  performance_metrics::SubTracker tracker("", "", performance_metrics::Tracker::Options(false));
 
   auto header = performance_test_msgs::msg::PerformanceHeader();
   header.stamp = rclcpp::Time(0, 0, RCL_ROS_TIME);
@@ -168,9 +168,9 @@ TEST(TrackerTest, ThroughputTest)
   ASSERT_FLOAT_EQ(1.0f, tracker.frequency());
 }
 
-TEST(TrackerTest, DeltaTest)
+TEST(SubTrackerTest, DeltaTest)
 {
-  performance_metrics::Tracker tracker("", "", performance_metrics::Tracker::Options(false));
+  performance_metrics::SubTracker tracker("", "", performance_metrics::Tracker::Options(false));
 
   auto header = performance_test_msgs::msg::PerformanceHeader();
   header.stamp = rclcpp::Time(0, 0, RCL_ROS_TIME);
@@ -189,4 +189,42 @@ TEST(TrackerTest, DeltaTest)
   ASSERT_EQ(0u, tracker.delta_stat().n());
   ASSERT_EQ(2u, tracker.received());
   ASSERT_EQ(2u, tracker.stat().n());
+}
+
+TEST(PubTrackerTest, InitTest)
+{
+  performance_metrics::PubTracker tracker("my_node", "my_topic");
+
+  ASSERT_EQ("my_node", tracker.get_node_name());
+  ASSERT_EQ("my_topic", tracker.get_entity_name());
+  ASSERT_EQ(0u, tracker.size());
+  ASSERT_EQ(0u, tracker.get_all_latency().size());
+  ASSERT_EQ(0u, tracker.stat().n());
+  ASSERT_DOUBLE_EQ(0.0, tracker.throughput());
+}
+
+TEST(PubTrackerTest, TrackingNumberTest)
+{
+  performance_metrics::PubTracker tracker("", "");
+
+  ASSERT_EQ(0u, tracker.get_and_update_tracking_number());
+  ASSERT_EQ(1u, tracker.get_and_update_tracking_number());
+  ASSERT_EQ(2u, tracker.get_and_update_tracking_number());
+}
+
+TEST(PubTrackerTest, AddSampleTest)
+{
+  performance_metrics::PubTracker tracker("", "");
+
+  tracker.add_sample(rclcpp::Time(0, 0, RCL_ROS_TIME), 10, 100, 1.0f);
+  tracker.add_sample(rclcpp::Time(1, 0, RCL_ROS_TIME), 30, 100, 1.0f);
+
+  ASSERT_EQ(2u, tracker.stat().n());
+  ASSERT_DOUBLE_EQ(20.0, tracker.stat().mean());
+  ASSERT_DOUBLE_EQ(10.0, tracker.stat().min());
+  ASSERT_DOUBLE_EQ(30.0, tracker.stat().max());
+  ASSERT_EQ(2u, tracker.get_all_latency().size());
+  ASSERT_EQ(100u, tracker.size());
+  ASSERT_FLOAT_EQ(1.0f, tracker.frequency());
+  ASSERT_DOUBLE_EQ(100.0, tracker.throughput());
 }

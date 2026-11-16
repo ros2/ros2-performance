@@ -143,13 +143,13 @@ public:
 
   void add_timer(std::chrono::microseconds period, std::function<void()> callback);
 
-  std::vector<const performance_metrics::Tracker *> sub_trackers_ptr();
-  std::vector<performance_metrics::Tracker> sub_trackers();
-  std::vector<performance_metrics::Tracker> service_trackers();
-  std::vector<performance_metrics::Tracker> client_trackers();
-  std::vector<performance_metrics::Tracker> action_client_trackers();
-  std::vector<performance_metrics::Tracker> action_server_trackers();
-  std::vector<performance_metrics::Tracker> pub_trackers();
+  std::vector<const performance_metrics::SubTracker *> sub_trackers_ptr();
+  std::vector<performance_metrics::SubTracker> sub_trackers();
+  std::vector<performance_metrics::SubTracker> service_trackers();
+  std::vector<performance_metrics::SubTracker> client_trackers();
+  std::vector<performance_metrics::SubTracker> action_client_trackers();
+  std::vector<performance_metrics::SubTracker> action_server_trackers();
+  std::vector<performance_metrics::PubTracker> pub_trackers();
 
   void set_events_logger(std::shared_ptr<performance_metrics::EventsLogger> ev);
 
@@ -175,8 +175,7 @@ protected:
 
   void store_publisher(
     rclcpp::PublisherBase::SharedPtr pub,
-    const std::string & topic_name,
-    const performance_metrics::Tracker::Options & tracking_options);
+    const std::string & topic_name);
 
   void store_client(
     rclcpp::ClientBase::SharedPtr client,
@@ -280,22 +279,22 @@ protected:
   // trackers.
   std::map<
     std::string,
-    std::pair<rclcpp::PublisherBase::SharedPtr, performance_metrics::Tracker>> m_pubs;
+    std::pair<rclcpp::PublisherBase::SharedPtr, performance_metrics::PubTracker>> m_pubs;
 
   // A topic-name indexed map to store the subscriber pointers with their
   // trackers.
   std::map<
     std::string,
-    std::pair<rclcpp::SubscriptionBase::SharedPtr, performance_metrics::Tracker>> m_subs;
+    std::pair<rclcpp::SubscriptionBase::SharedPtr, performance_metrics::SubTracker>> m_subs;
 
   using ClientsTuple =
-    std::tuple<rclcpp::ClientBase::SharedPtr, performance_metrics::Tracker, uint32_t>;
+    std::tuple<rclcpp::ClientBase::SharedPtr, performance_metrics::SubTracker, uint32_t>;
 
   using ActionClientsTuple =
-    std::tuple<rclcpp_action::ClientBase::SharedPtr, performance_metrics::Tracker, uint32_t>;
+    std::tuple<rclcpp_action::ClientBase::SharedPtr, performance_metrics::SubTracker, uint32_t>;
 
   using ActionServersTuple =
-    std::tuple<rclcpp_action::ServerBase::SharedPtr, performance_metrics::Tracker, uint32_t>;
+    std::tuple<rclcpp_action::ServerBase::SharedPtr, performance_metrics::SubTracker, uint32_t>;
 
   // A service-name indexed map to store the client pointers with their
   // trackers.
@@ -307,7 +306,7 @@ protected:
   // trackers.
   std::map<
     std::string,
-    std::pair<rclcpp::ServiceBase::SharedPtr, performance_metrics::Tracker>> m_servers;
+    std::pair<rclcpp::ServiceBase::SharedPtr, performance_metrics::SubTracker>> m_servers;
 
   std::vector<rclcpp::TimerBase::SharedPtr> m_timers;
 

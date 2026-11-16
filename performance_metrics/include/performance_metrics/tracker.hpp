@@ -44,6 +44,7 @@
 namespace performance_metrics
 {
 
+/// Statistics shared by every kind of tracker; only usable through PubTracker or SubTracker.
 class Tracker
 {
 public:
@@ -62,55 +63,17 @@ public:
 
   Tracker() = delete;
 
-  Tracker(
-    const std::string & node_name,
-    const std::string & topic_srv_name,
-    const Options & tracking_options)
-  : m_node_name(node_name), m_topic_srv_name(topic_srv_name), m_tracking_options(tracking_options)
-  {}
-
-  void scan(
-    const performance_test_msgs::msg::PerformanceHeader & header,
-    const rclcpp::Time & now,
-    std::shared_ptr<EventsLogger> elog = nullptr);
-
-  void add_sample(
-    const rclcpp::Time & now,
-    uint64_t latency_sample,
-    size_t size,
-    float frequency);
-
-  uint32_t get_and_update_tracking_number();
-
-  uint64_t lost() const {return m_lost_messages;}
-
-  uint64_t late() const {return m_late_messages;}
-
-  uint64_t too_late() const {return m_too_late_messages;}
-
-  uint64_t received() const {return m_received_messages;}
-
   size_t size() const {return m_data_size;}
 
   float frequency() const {return m_frequency;}
 
   Stat<uint64_t> stat() const {return m_stat;}
 
-  uint64_t delta_received() const {return m_delta_received_messages;}
-
-  void reset_delta_received() const {m_delta_received_messages = 0;}
-
-  Stat<uint64_t> delta_stat() const {return m_delta_stat;}
-
-  void reset_delta_stat() const {m_delta_stat = Stat<uint64_t>();}
-
   double throughput() const;
 
   void set_frequency(float f) {m_frequency = f;}
 
   void set_size(size_t s) {m_data_size = s;}
-
-  uint64_t last() const {return m_last_latency;}
 
   std::string get_node_name() const
   {
@@ -127,9 +90,88 @@ public:
     return m_all_latency;
   }
 
-private:
+protected:
+  Tracker(const std::string & node_name, const std::string & topic_srv_name)
+  : m_node_name(node_name), m_topic_srv_name(topic_srv_name)
+  {}
+
+  ~Tracker() = default;
+  Tracker(const Tracker &) = default;
+  Tracker & operator=(const Tracker &) = default;
+
+  void add_sample(
+    const rclcpp::Time & now,
+    uint64_t latency_sample,
+    size_t size,
+    float frequency);
+
   std::string m_node_name;
   std::string m_topic_srv_name;
+
+private:
+  size_t m_data_size = 0;
+  float m_frequency = 0;
+  Stat<uint64_t> m_stat;
+  std::deque<uint64_t> m_all_latency;
+
+  rclcpp::Time m_first_msg_time;
+  rclcpp::Time m_last_msg_time;
+};
+
+/// Tracks the sending side of a publisher: how long each publish took, and the tracking numbers.
+class PubTracker : public Tracker
+{
+public:
+  PubTracker(const std::string & node_name, const std::string & topic_name)
+  : Tracker(node_name, topic_name)
+  {}
+
+  using Tracker::add_sample;
+
+  uint32_t get_and_update_tracking_number();
+
+private:
+  uint32_t m_tracking_number_count = 0;
+};
+
+/// Tracks the receiving side of any entity that gets a PerformanceHeader: subscriptions,
+/// clients, services and actions. Measures latency, loss and lateness of what arrives.
+class SubTracker : public Tracker
+{
+public:
+  SubTracker() = delete;
+
+  SubTracker(
+    const std::string & node_name,
+    const std::string & topic_srv_name,
+    const Options & tracking_options)
+  : Tracker(node_name, topic_srv_name), m_tracking_options(tracking_options)
+  {}
+
+  void scan(
+    const performance_test_msgs::msg::PerformanceHeader & header,
+    const rclcpp::Time & now,
+    std::shared_ptr<EventsLogger> elog = nullptr);
+
+  uint64_t lost() const {return m_lost_messages;}
+
+  uint64_t late() const {return m_late_messages;}
+
+  uint64_t too_late() const {return m_too_late_messages;}
+
+  uint64_t received() const {return m_received_messages;}
+
+  uint64_t last() const {return m_last_latency;}
+
+  uint64_t delta_received() const {return m_delta_received_messages;}
+
+  void reset_delta_received() const {m_delta_received_messages = 0;}
+
+  Stat<uint64_t> delta_stat() const {return m_delta_stat;}
+
+  void reset_delta_stat() const {m_delta_stat = Stat<uint64_t>();}
+
+private:
   Options m_tracking_options;
 
   // TODO(neumarkt): fix this `mutable` hack.
@@ -141,14 +183,7 @@ private:
   uint64_t m_received_messages = 0;
   uint64_t m_late_messages = 0;
   uint64_t m_too_late_messages = 0;
-  size_t m_data_size = 0;
-  float m_frequency = 0;
-  Stat<uint64_t> m_stat;
   uint32_t m_tracking_number_count = 0;
-  std::deque<uint64_t> m_all_latency;
-
-  rclcpp::Time m_first_msg_time;
-  rclcpp::Time m_last_msg_time;
 };
 
 std::ostream & operator<<(std::ostream & os, const Tracker::Options & opts);

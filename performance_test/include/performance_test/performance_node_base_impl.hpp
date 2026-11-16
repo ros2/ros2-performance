@@ -149,7 +149,7 @@ void PerformanceNodeBase::add_publisher(
     topic_name,
     qos_profile);
 
-  this->store_publisher(pub, topic_name, performance_metrics::Tracker::Options());
+  this->store_publisher(pub, topic_name);
 }
 
 template<typename Srv>
