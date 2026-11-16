@@ -93,6 +93,9 @@ public:
   void set_latency_callback(
     performance_metrics::ResourceUsageLogger & ru_logger);
 
+  // Write per-executor CPU (grouped by thread name) over the spin window.
+  void save_cpu_by_executor(const std::string & results_folder) const;
+
 private:
   void wait_discovery();
 
@@ -104,7 +107,8 @@ private:
     std::chrono::milliseconds period = std::chrono::milliseconds(20),
     std::chrono::milliseconds max_edp_time = std::chrono::milliseconds(30 * 1000));
 
-  std::unique_ptr<std::thread> create_spin_thread(rclcpp::Executor::SharedPtr executor);
+  std::unique_ptr<std::thread> create_spin_thread(
+    rclcpp::Executor::SharedPtr executor, const std::string & name);
 
   std::chrono::high_resolution_clock::time_point m_start_time;
 
@@ -122,6 +126,10 @@ private:
   SpinType m_spin_type;
   bool m_csv_out;
   size_t m_num_threads;
+
+  // Per-executor CPU (thread name -> CPU seconds) over the spin window.
+  std::map<std::string, double> m_thread_cpu_seconds;
+  double m_cpu_window_seconds = 0.0;
 };
 
 }  // namespace performance_test
