@@ -344,7 +344,7 @@ void PerformanceNodeBase::publish_msg(
 
   auto tracking_number = tracker.get_and_update_tracking_number();
   rclcpp::Time publish_time;
-  uint64_t pub_duration_us = 0;
+  uint64_t pub_duration_ns = 0;
   size_t msg_size = 0;
   switch (msg_pass_by) {
     case msg_pass_by_t::PASS_BY_SHARED_PTR:
@@ -363,7 +363,7 @@ void PerformanceNodeBase::publish_msg(
         pub->publish(*msg);
 
         auto end_time = m_node_interfaces.clock->get_clock()->now();
-        pub_duration_us = (end_time - publish_time).nanoseconds() / 1000.0f;
+        pub_duration_ns = (end_time - publish_time).nanoseconds();
 
         break;
       }
@@ -383,7 +383,7 @@ void PerformanceNodeBase::publish_msg(
         pub->publish(std::move(msg));
 
         auto end_time = m_node_interfaces.clock->get_clock()->now();
-        pub_duration_us = (end_time - publish_time).nanoseconds() / 1000.0f;
+        pub_duration_ns = (end_time - publish_time).nanoseconds();
 
         break;
       }
@@ -405,17 +405,17 @@ void PerformanceNodeBase::publish_msg(
         pub->publish(std::move(loaned_msg));
 
         auto end_time = m_node_interfaces.clock->get_clock()->now();
-        pub_duration_us = (end_time - publish_time).nanoseconds() / 1000.0f;
+        pub_duration_ns = (end_time - publish_time).nanoseconds();
 
         break;
       }
   }
 
-  tracker.add_sample(publish_time, pub_duration_us, msg_size, pub_frequency);
+  tracker.add_sample(publish_time, pub_duration_ns, msg_size, pub_frequency);
 
   RCLCPP_DEBUG(
     this->get_node_logger(),
-    "Publishing to %s msg number %d took %lu us", name.c_str(), tracking_number, pub_duration_us);
+    "Publishing to %s msg number %d took %lu ns", name.c_str(), tracking_number, pub_duration_ns);
 }
 
 template<typename MsgT>
