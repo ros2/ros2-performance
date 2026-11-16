@@ -323,6 +323,13 @@ void System::log_latency_all_stats(
     publishers,
     m_csv_out,
     "Publishers stats:");
+
+  performance_metrics::log_trackers_sent_vs_received(
+    stream,
+    publishers,
+    subs,
+    m_csv_out,
+    static_cast<double>(m_experiment_duration.count()));
 }
 
 void System::log_latency_total_stats(
