@@ -27,7 +27,9 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 #include <cmath>
+#include <cstdint>
 #include <iomanip>
+#include <map>
 #include <ostream>
 #include <string>
 #include <utility>
@@ -119,9 +121,32 @@ void log_total_stats(
   stream << std::endl;
 }
 
-void log_trackers_latency_all_stats(
+namespace
+{
+
+struct ReceiveCounters
+{
+  uint64_t received = 0;
+  uint64_t late = 0;
+  uint64_t too_late = 0;
+  uint64_t lost = 0;
+};
+
+ReceiveCounters receive_counters(const SubTracker & tracker)
+{
+  return {tracker.received(), tracker.late(), tracker.too_late(), tracker.lost()};
+}
+
+// Publishers receive nothing. The columns stay, as zeros, so the layout of the file is unchanged.
+ReceiveCounters receive_counters(const PubTracker &)
+{
+  return {};
+}
+
+template<typename TrackerT>
+void log_all_stats(
   std::ostream & stream,
-  const std::vector<Tracker> & trackers,
+  const std::vector<TrackerT> & trackers,
   const bool csv_out,
   const std::string & title)
 {
@@ -154,15 +179,16 @@ void log_trackers_latency_all_stats(
     };
 
   auto log_stats_line = [&stream, wide_space, narrow_space, separator, csv_out](
-    const Tracker & tracker)
+    const TrackerT & tracker)
     {
+      const auto counters = receive_counters(tracker);
       stream_out(csv_out, stream, tracker.get_node_name(), wide_space);
       stream_out(csv_out, stream, tracker.get_entity_name(), wide_space);
       stream_out(csv_out, stream, tracker.size(), narrow_space);
-      stream_out(csv_out, stream, tracker.received(), wide_space);
-      stream_out(csv_out, stream, tracker.late(), narrow_space);
-      stream_out(csv_out, stream, tracker.too_late(), wide_space);
-      stream_out(csv_out, stream, tracker.lost(), narrow_space);
+      stream_out(csv_out, stream, counters.received, wide_space);
+      stream_out(csv_out, stream, counters.late, narrow_space);
+      stream_out(csv_out, stream, counters.too_late, wide_space);
+      stream_out(csv_out, stream, counters.lost, narrow_space);
       stream_out(csv_out, stream, std::round(tracker.stat().mean()), narrow_space);
       stream_out(csv_out, stream, std::round(tracker.stat().stddev()), narrow_space);
       stream_out(csv_out, stream, std::round(tracker.stat().min()), narrow_space);
@@ -184,9 +210,145 @@ void log_trackers_latency_all_stats(
   }
 }
 
+}  // namespace
+
+void log_trackers_latency_all_stats(
+  std::ostream & stream,
+  const std::vector<SubTracker> & trackers,
+  const bool csv_out,
+  const std::string & title)
+{
+  log_all_stats(stream, trackers, csv_out, title);
+}
+
+void log_trackers_latency_all_stats(
+  std::ostream & stream,
+  const std::vector<PubTracker> & trackers,
+  const bool csv_out,
+  const std::string & title)
+{
+  log_all_stats(stream, trackers, csv_out, title);
+}
+
+void log_trackers_sent_vs_received(
+  std::ostream & stream,
+  const std::vector<PubTracker> & pub_trackers,
+  const std::vector<SubTracker> & sub_trackers,
+  const bool csv_out,
+  double duration_sec)
+{
+  constexpr int wide_space = 15;
+  constexpr int narrow_space = 12;
+
+  struct Agg
+  {
+    uint64_t sent = 0;
+    uint64_t received = 0;
+    uint64_t gap_lost = 0;
+    double cfg_hz = 0.0;
+    int n_pub = 0;
+    int n_sub = 0;
+  };
+
+  // Group by topic name. Correct for 1:1 pub/sub topologies; for fan-out
+  // (1 pub -> N subs) received messages are summed across subs,
+  // so delivered_perc can exceed 100 and true_lost go negative.
+  std::map<std::string, Agg> by_topic;
+
+  for (const auto & t : pub_trackers) {
+    auto & a = by_topic[t.get_entity_name()];
+    a.sent += t.sent();
+    a.cfg_hz = t.frequency();
+    a.n_pub += 1;
+  }
+  for (const auto & t : sub_trackers) {
+    auto & a = by_topic[t.get_entity_name()];
+    a.received += t.received();
+    a.gap_lost += t.lost();
+    a.n_sub += 1;
+  }
+
+  if (by_topic.empty()) {
+    return;
+  }
+
+  stream << std::endl;
+  stream << "Sent vs received messages:" << std::endl;
+  // expected = cfg_hz * duration (nominal target). Decomposes the loss:
+  //   unsent    = expected - sent     (publisher could not fire fast enough)
+  //   true_lost = sent - received     (dropped in transport / by the executor)
+  // gap_lost is the old sequence-gap counter, kept for comparison.
+  stream_out(csv_out, stream, "topic", wide_space);
+  stream_out(csv_out, stream, "n_pub", narrow_space);
+  stream_out(csv_out, stream, "n_sub", narrow_space);
+  stream_out(csv_out, stream, "cfg_hz", narrow_space);
+  stream_out(csv_out, stream, "expected", narrow_space);
+  stream_out(csv_out, stream, "sent", narrow_space);
+  stream_out(csv_out, stream, "unsent", narrow_space);
+  stream_out(csv_out, stream, "received", narrow_space);
+  stream_out(csv_out, stream, "delivered_perc", wide_space);
+  stream_out(csv_out, stream, "true_lost", narrow_space);
+  stream_out(csv_out, stream, "gap_lost", narrow_space, false);
+  stream << std::endl;
+
+  uint64_t tot_expected = 0;
+  uint64_t tot_sent = 0;
+  uint64_t tot_recv = 0;
+  uint64_t tot_gap = 0;
+  int64_t tot_unsent = 0;
+  int64_t tot_true_lost = 0;
+
+  for (const auto & kv : by_topic) {
+    const auto & a = kv.second;
+    const uint64_t expected =
+      (duration_sec > 0.0) ? static_cast<uint64_t>(std::llround(a.cfg_hz * duration_sec)) : 0;
+    const int64_t unsent =
+      static_cast<int64_t>(expected) - static_cast<int64_t>(a.sent);
+    const int64_t true_lost =
+      static_cast<int64_t>(a.sent) - static_cast<int64_t>(a.received);
+    const double delivered = (a.sent > 0) ? (100.0 * a.received / a.sent) : 0.0;
+
+    stream_out(csv_out, stream, kv.first, wide_space);
+    stream_out(csv_out, stream, a.n_pub, narrow_space);
+    stream_out(csv_out, stream, a.n_sub, narrow_space);
+    stream_out(csv_out, stream, a.cfg_hz, narrow_space);
+    stream_out(csv_out, stream, expected, narrow_space);
+    stream_out(csv_out, stream, a.sent, narrow_space);
+    stream_out(csv_out, stream, unsent, narrow_space);
+    stream_out(csv_out, stream, a.received, narrow_space);
+    stream_out(csv_out, stream, delivered, wide_space);
+    stream_out(csv_out, stream, true_lost, narrow_space);
+    stream_out(csv_out, stream, a.gap_lost, narrow_space, false);
+    stream << std::endl;
+
+    tot_expected += expected;
+    tot_sent += a.sent;
+    tot_recv += a.received;
+    tot_gap += a.gap_lost;
+    tot_unsent += unsent;
+    tot_true_lost += true_lost;
+  }
+
+  const double tot_delivered =
+    (tot_sent > 0) ? (100.0 * tot_recv / tot_sent) : 0.0;
+
+  stream_out(csv_out, stream, "TOTAL", wide_space);
+  stream_out(csv_out, stream, "", narrow_space);
+  stream_out(csv_out, stream, "", narrow_space);
+  stream_out(csv_out, stream, "", narrow_space);
+  stream_out(csv_out, stream, tot_expected, narrow_space);
+  stream_out(csv_out, stream, tot_sent, narrow_space);
+  stream_out(csv_out, stream, tot_unsent, narrow_space);
+  stream_out(csv_out, stream, tot_recv, narrow_space);
+  stream_out(csv_out, stream, tot_delivered, wide_space);
+  stream_out(csv_out, stream, tot_true_lost, narrow_space);
+  stream_out(csv_out, stream, tot_gap, narrow_space, false);
+  stream << std::endl;
+}
+
 void log_trackers_latency_total_stats(
   std::ostream & stream,
-  const std::vector<Tracker> & trackers,
+  const std::vector<SubTracker> & trackers,
   const bool csv_out)
 {
   uint64_t total_received = 0;
@@ -211,7 +373,7 @@ void log_trackers_latency_total_stats(
     average_latency, stream, csv_out);
 }
 
-uint64_t get_trackers_avg_latency(const std::vector<const Tracker *> & trackers)
+uint64_t get_trackers_avg_latency(const std::vector<const SubTracker *> & trackers)
 {
   uint64_t total_received = 0;
   double total_latency = 0;
