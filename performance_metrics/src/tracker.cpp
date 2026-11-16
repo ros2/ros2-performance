@@ -167,9 +167,7 @@ uint32_t Tracker::get_and_update_tracking_number()
 
 double Tracker::throughput() const
 {
-  // We compute max because currently publishers update only n() and not m_received_messages,
-  // but for subscriptions n() will not include messages received too late.
-  uint64_t num_msg_received = std::max(m_stat.n(), m_received_messages);
+  uint64_t num_msg_received = m_stat.n();
   if (num_msg_received < 2) {
     return 0.0;
   }
